@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Skeleton } from "@/components/ui/skeleton"
 import Navigation from "@/components/navigation"
 import StepIndicator from "@/components/step-indicator"
 import {
@@ -21,6 +22,7 @@ import {
   Heart,
   ChevronRight,
   ShoppingCart,
+  Loader2,
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useCart } from "@/hooks/use-cart"
@@ -68,6 +70,9 @@ export default function DesignPage() {
   ])
   const [inputMessage, setInputMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  // 新增状态：一键替换loading和对话式设计loading
+  const [quickReplaceLoading, setQuickReplaceLoading] = useState(false)
+  const [designAreaLoading, setDesignAreaLoading] = useState(false)
   const router = useRouter()
   const { addToCart } = useCart()
 
@@ -412,6 +417,9 @@ export default function DesignPage() {
   const handleQuickReplace = (productId: number, productName: string, productImage?: string) => {
     console.log(`[v0] Quick replacing with ${productName}`)
     if (productImage) {
+      // 设置一键替换loading状态
+      setQuickReplaceLoading(true)
+      
       // 查找对应的产品，获取修改后的图片
       const sofaProduct = sofaProducts.find(product => product.id === productId)
       const wardrobeProduct = wardrobeProducts.find(product => product.id === productId)
@@ -436,21 +444,18 @@ export default function DesignPage() {
         modifiedImage = wallArtProduct?.modifiedImage
       }
       
-      // 如果有修改后的图片，直接更新房间主图片
-      if (modifiedImage) {
-        setRoomImage(modifiedImage)
-        
-        // 显示提示信息
-        setToastMessage(`已将房间中的${productName}替换为修改后的效果`)
+      // 3秒后显示修改后的图片
+      setTimeout(() => {
+        if (modifiedImage) {
+          setRoomImage(modifiedImage)
+          setToastMessage(`已将房间中的${productName}替换为修改后的效果`)
+        } else {
+          setRoomImage(productImage)
+          setToastMessage(`已将房间中的${productName}替换为选中的产品`)
+        }
         setShowToast(true)
-      } else {
-        // 如果没有修改后的图片，使用原产品图片
-        setRoomImage(productImage)
-        
-        // 显示提示信息
-        setToastMessage(`已将房间中的${productName}替换为选中的产品`)
-        setShowToast(true)
-      }
+        setQuickReplaceLoading(false)
+      }, 3000)
     }
   }
 
@@ -612,6 +617,8 @@ export default function DesignPage() {
     setChatMessages((prev) => [...prev, userMessage])
     setInputMessage("")
     setIsLoading(true)
+    // 设置设计区域loading状态
+    setDesignAreaLoading(true)
 
     try {
       // Convert current room image to valid URL
@@ -677,6 +684,8 @@ export default function DesignPage() {
       setChatMessages((prev) => [...prev, errorMessage])
     } finally {
       setIsLoading(false)
+      // 清除设计区域loading状态
+      setDesignAreaLoading(false)
     }
   }
 
@@ -959,6 +968,32 @@ export default function DesignPage() {
 
             <div className="w-full h-full flex items-center justify-center p-6 xl:p-8">
               <div className="relative w-full max-w-6xl xl:max-w-7xl h-full max-h-full bg-card rounded-lg shadow-lg overflow-hidden">
+                {/* 一键替换loading效果 */}
+                {quickReplaceLoading && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
+                    <div className="bg-white rounded-lg p-6 flex flex-col items-center gap-4">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      <div className="text-center">
+                        <p className="text-lg font-semibold text-gray-900">AI智能设计中…</p>
+                        <p className="text-sm text-gray-600 mt-1">正在为您生成设计方案，请稍候</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* 对话式设计loading效果 */}
+                {designAreaLoading && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
+                    <div className="bg-white rounded-lg p-6 flex flex-col items-center gap-4">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      <div className="text-center">
+                        <p className="text-lg font-semibold text-gray-900">AI智能设计中…</p>
+                        <p className="text-sm text-gray-600 mt-1">正在根据您的需求生成设计方案</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 <img
                   src={roomImage || "/placeholder.svg"}
                   alt="设计房间"

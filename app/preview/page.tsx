@@ -53,10 +53,6 @@ export default function PreviewPage() {
     setZoomLevel((prev) => Math.max(prev - 0.25, 0.5))
   }
 
-  const handleReset = () => {
-    setZoomLevel(1)
-  }
-
   // 渲染效果处理函数
   const handleTimeChange = (time: "day" | "night") => {
     setSelectedTime(time)
@@ -339,9 +335,6 @@ export default function PreviewPage() {
 
                   {/* 工具栏：旋转/缩放 */}
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={handleReset}>
-                      <RotateCcw className="h-4 w-4" />
-                    </Button>
                     <Button size="sm" variant="outline" onClick={handleZoomIn}>
                       <ZoomIn className="h-4 w-4" />
                     </Button>

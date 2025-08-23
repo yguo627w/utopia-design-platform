@@ -33,8 +33,9 @@ export default function MarketplacePage() {
       image: "/nordic-fabric-sofa.png",
       rating: 4.8,
       reviews: 128,
-      tags: ["热销"],
+      tags: ["限时特惠"],
       discount: "限时特惠",
+      channel: "淘宝",
     },
     {
       id: 1002,
@@ -47,6 +48,7 @@ export default function MarketplacePage() {
       reviews: 86,
       tags: ["新品"],
       discount: "免运费",
+      channel: "京东",
     },
     {
       id: 1003,
@@ -59,6 +61,7 @@ export default function MarketplacePage() {
       reviews: 215,
       tags: ["以旧换新"],
       discount: "以旧换新",
+      channel: "宜家",
     },
     {
       id: 1004,
@@ -71,6 +74,7 @@ export default function MarketplacePage() {
       reviews: 76,
       tags: ["热销"],
       discount: "免运费",
+      channel: "淘宝",
     },
     {
       id: 1005,
@@ -83,6 +87,7 @@ export default function MarketplacePage() {
       reviews: 156,
       tags: ["热销"],
       discount: "限时特惠",
+      channel: "京东",
     },
     {
       id: 1006,
@@ -95,6 +100,7 @@ export default function MarketplacePage() {
       reviews: 98,
       tags: ["以旧换新"],
       discount: "以旧换新",
+      channel: "宜家",
     },
   ]
 
@@ -114,7 +120,10 @@ export default function MarketplacePage() {
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold mb-2">家居商城</h1>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl font-bold">家居商城</h1>
+              <Badge className="bg-red-500 text-white text-sm px-3 py-1">全网最低价</Badge>
+            </div>
             <p className="text-muted-foreground">从设计到购买，一站式打造你的理想空间</p>
           </div>
           <div className="flex gap-3">
@@ -131,21 +140,6 @@ export default function MarketplacePage() {
                 </div>
               </CardContent>
             </Card>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const cart = JSON.parse(localStorage.getItem("sharedCart") || "[]")
-                const currentCart = cartItems
-                console.log("localStorage cart:", cart)
-                console.log("Current cart state:", currentCart)
-                const designItems = currentCart.filter((item: any) => item.source === "design")
-                const marketplaceItems = currentCart.filter((item: any) => item.source === "marketplace")
-                alert(`localStorage: ${cart.length} 件商品\n当前状态: ${currentCart.length} 件商品\n设计页面: ${designItems.length} 件\n商城页面: ${marketplaceItems.length} 件`)
-              }}
-            >
-              调试购物车
-            </Button>
           </div>
         </div>
 
@@ -263,19 +257,30 @@ export default function MarketplacePage() {
                       alt={product.name}
                       className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                     />
+                    {/* 功能标签 - 左上角 */}
                     <div className="absolute top-3 left-3">
-                      <Badge className="bg-primary/90">{product.discount}</Badge>
+                      <Badge className="bg-primary/90 text-white">{product.discount}</Badge>
                     </div>
-                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* 渠道标签 - 右上角 */}
+                    <div className="absolute top-3 right-3">
+                      <Badge 
+                        variant="secondary" 
+                        className={`text-white border-0 text-xs px-2 py-1 ${
+                          product.channel === "淘宝" ? "bg-orange-500" :
+                          product.channel === "京东" ? "bg-red-500" :
+                          product.channel === "宜家" ? "bg-blue-500" :
+                          "bg-gray-500"
+                        }`}
+                      >
+                        {product.channel}
+                      </Badge>
+                    </div>
+                    {/* 收藏按钮 - 悬停时显示 */}
+                    <div className="absolute top-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button size="sm" variant="secondary" className="h-8 w-8 p-0">
                         <Heart className="h-4 w-4" />
                       </Button>
                     </div>
-                    {product.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="absolute bottom-3 left-3 text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
                   </div>
 
                   <CardContent className="p-4">

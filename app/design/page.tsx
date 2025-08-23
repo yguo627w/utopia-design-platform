@@ -13,10 +13,8 @@ import StepIndicator from "@/components/step-indicator"
 import {
   MessageCircle,
   Send,
-  RotateCcw,
   ZoomIn,
   ZoomOut,
-  Move3D,
   Search,
   Plus,
   Star,
@@ -223,6 +221,24 @@ export default function DesignPage() {
       price: "¥4,299",
       rating: 4.8,
       reviews: 156,
+    },
+    {
+      id: 202,
+      name: "现代布艺沙发",
+      image: "https://malexa.bj.bcebos.com/Utopia/%E6%B2%99%E5%8F%912.jpg",
+      modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E6%B2%99%E5%8F%91%E4%BF%AE%E6%94%B92.png",
+      price: "¥3,899",
+      rating: 4.7,
+      reviews: 203,
+    },
+    {
+      id: 203,
+      name: "北欧风沙发",
+      image: "https://malexa.bj.bcebos.com/Utopia/%E6%B2%99%E5%8F%913.jpg",
+      modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E6%B2%99%E5%8F%91%E4%BF%AE%E6%94%B93.png",
+      price: "¥5,199",
+      rating: 4.9,
+      reviews: 128,
     }
   ]
 
@@ -236,6 +252,24 @@ export default function DesignPage() {
       rating: 4.8,
       reviews: 89,
     },
+    {
+      id: 302,
+      name: "北欧风茶几",
+      image: "https://malexa.bj.bcebos.com/Utopia/%E8%8C%B6%E5%87%A02.jpg",
+      modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E8%8C%B6%E5%87%A0%E4%BF%AE%E6%94%B92.jpg",
+      price: "¥2,299",
+      rating: 4.7,
+      reviews: 156,
+    },
+    {
+      id: 303,
+      name: "轻奢风茶几",
+      image: "https://malexa.bj.bcebos.com/Utopia/%E8%8C%B6%E5%87%A03.jpg",
+      modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E8%8C%B6%E5%87%A0%E4%BF%AE%E6%94%B93.jpg",
+      price: "¥3,199",
+      rating: 4.9,
+      reviews: 112,
+    }
   ]
 
   const vaseProducts = [
@@ -248,6 +282,24 @@ export default function DesignPage() {
       rating: 4.8,
       reviews: 89,
     },
+    {
+      id: 402,
+      name: "北欧风花瓶",
+      image: "https://malexa.bj.bcebos.com/Utopia/%E8%8A%B1%E7%93%B63.jpg",
+      modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E8%8A%B1%E7%93%B6%E4%BF%AE%E6%94%B93.jpg",
+      price: "¥399",
+      rating: 4.7,
+      reviews: 156,
+    },
+    {
+      id: 403,
+      name: "轻奢风花瓶",
+      image: "https://malexa.bj.bcebos.com/Utopia/%E8%8A%B1%E7%93%B64.jpg",
+      modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E8%8A%B1%E7%93%B6%E4%BF%AE%E6%94%B94.jpg",
+      price: "¥599",
+      rating: 4.9,
+      reviews: 112,
+    }
   ]
 
   // 卧室家具产品数据
@@ -673,14 +725,14 @@ export default function DesignPage() {
       )}
 
       <div className="flex h-[calc(100vh-73px-65px-48px)] max-h-[calc(100vh-73px-65px-48px)]">
-        <div className="w-80 xl:w-96 2xl:w-[400px] border-r border-border bg-card/30 overflow-y-auto flex-shrink-0 h-full">
+        <div className="w-72 xl:w-80 2xl:w-[320px] border-r border-border bg-card/30 overflow-y-auto flex-shrink-0 h-full">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
             <TabsList className="grid w-full grid-cols-2 m-4 mb-0 flex-shrink-0">
               <TabsTrigger value="inspiration">设计灵感</TabsTrigger>
               <TabsTrigger value="furniture">家具推荐</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="inspiration" className="p-4 space-y-4 flex-1 overflow-y-auto">
+            <TabsContent value="inspiration" className="p-4 space-y-3 flex-1 overflow-y-auto">
               {designStyles.map((style, index) => (
                 <div
                   key={index}
@@ -690,14 +742,14 @@ export default function DesignPage() {
                     <img
                       src={style.image || "/placeholder.svg"}
                       alt={style.name}
-                      className="w-full h-32 object-cover"
+                      className="w-full h-28 object-cover"
                     />
                     {style.tag && (
                       <Badge className="absolute top-2 left-2 bg-primary text-white text-xs">{style.tag}</Badge>
                     )}
                   </div>
                   <div className="p-3">
-                    <h3 className="font-semibold text-sm mb-1">{style.name}</h3>
+                    <h3 className="font-semibold text-sm mb-1 line-clamp-1">{style.name}</h3>
                     <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{style.description}</p>
                     <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
@@ -767,326 +819,82 @@ export default function DesignPage() {
                   </div>
                 </div>
 
-                {selectedFurnitureType === "衣柜" && (
+                {/* 家具推荐区域 - 使用双列布局 */}
+                {selectedFurnitureType && (
                   <div className="pt-4 border-t">
-                    <h3 className="text-sm font-medium mb-3">衣柜推荐</h3>
-                    <div className="space-y-3">
-                      {wardrobeProducts.map((product) => (
-                        <div key={product.id} className="bg-card rounded-lg overflow-hidden shadow-sm border">
-                          <img
-                            src={product.image || "/placeholder.svg"}
-                            alt={product.name}
-                            className="w-full h-24 object-cover"
-                          />
-                          <div className="p-2">
-                            <h4 className="text-xs font-medium mb-1">{product.name}</h4>
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-semibold text-primary">{product.price}</span>
-                              <div className="flex items-center gap-1">
-                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                <span className="text-xs">{product.rating}</span>
-                                <span className="text-xs text-muted-foreground">({product.reviews})</span>
+                    <h3 className="text-sm font-medium mb-3">{selectedFurnitureType}推荐</h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(() => {
+                        let products: any[] = []
+                        switch (selectedFurnitureType) {
+                          case "衣柜":
+                            products = wardrobeProducts
+                            break
+                          case "沙发":
+                            products = sofaProducts
+                            break
+                          case "茶几":
+                            products = coffeeTableProducts
+                            break
+                          case "花瓶":
+                            products = vaseProducts
+                            break
+                          case "床单":
+                            products = bedSheetProducts
+                            break
+                          case "挂画":
+                            products = wallArtProducts
+                            break
+                          default:
+                            return null
+                        }
+                        
+                        return products.map((product) => (
+                          <div key={product.id} className="bg-card rounded-lg overflow-hidden shadow-sm border">
+                            <img
+                              src={product.image || "/placeholder.svg"}
+                              alt={product.name}
+                              className="w-full h-20 object-cover"
+                            />
+                            <div className="p-2">
+                              <h4 className="text-xs font-medium mb-1 line-clamp-1">{product.name}</h4>
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-semibold text-primary">{product.price}</span>
+                                <div className="flex items-center gap-1">
+                                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                  <span className="text-xs">{product.rating}</span>
+                                </div>
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-xs h-6 bg-transparent flex-shrink-0"
+                                  onClick={() => handleAddToChat(product.name, product.image)}
+                                >
+                                  添加到对话
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-xs h-6 bg-transparent flex-shrink-0"
+                                  onClick={() => handleQuickReplace(product.id, product.name, product.image)}
+                                >
+                                  🔄 一键更换
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  className="text-xs h-6 flex-shrink-0"
+                                  onClick={() => handleAddToCart(product.id, product.name, product.price, product.image)}
+                                >
+                                  <ShoppingCart className="h-3 w-3 mr-1" />
+                                  加购物车
+                                </Button>
                               </div>
                             </div>
-                            <div className="flex gap-1">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs h-7 bg-transparent flex-shrink-0"
-                                onClick={() => handleAddToChat(product.name, product.image)}
-                              >
-                                添加到对话
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs h-7 bg-transparent flex-shrink-0"
-                                onClick={() => handleQuickReplace(product.id, product.name, product.image)}
-                              >
-                                🔄 一键更换
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="text-xs h-7 flex-shrink-0"
-                                onClick={() => handleAddToCart(product.id, product.name, product.price, product.image)}
-                              >
-                                <ShoppingCart className="h-3 w-3 mr-1" />
-                                加购物车
-                              </Button>
-                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedFurnitureType === "床单" && (
-                  <div className="pt-4 border-t">
-                    <h3 className="text-sm font-medium mb-3">床单推荐</h3>
-                    <div className="space-y-3">
-                      {bedSheetProducts.map((product) => (
-                        <div key={product.id} className="bg-card rounded-lg overflow-hidden shadow-sm border">
-                          <img
-                            src={product.image || "/placeholder.svg"}
-                            alt={product.name}
-                            className="w-full h-24 object-cover"
-                          />
-                          <div className="p-2">
-                            <h4 className="text-xs font-medium mb-1">{product.name}</h4>
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-semibold text-primary">{product.price}</span>
-                              <div className="flex items-center gap-1">
-                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                <span className="text-xs">{product.rating}</span>
-                                <span className="text-xs text-muted-foreground">({product.reviews})</span>
-                              </div>
-                            </div>
-                            <div className="flex gap-1">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs h-7 bg-transparent flex-shrink-0"
-                                onClick={() => handleAddToChat(product.name, product.image)}
-                              >
-                                添加到对话
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs h-7 bg-transparent flex-shrink-0"
-                                onClick={() => handleQuickReplace(product.id, product.name, product.image)}
-                              >
-                                🔄 一键更换
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="text-xs h-7 flex-shrink-0"
-                                onClick={() => handleAddToCart(product.id, product.name, product.price, product.image)}
-                              >
-                                <ShoppingCart className="h-3 w-3 mr-1" />
-                                加购物车
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedFurnitureType === "挂画" && (
-                  <div className="pt-4 border-t">
-                    <h3 className="text-sm font-medium mb-3">挂画推荐</h3>
-                    <div className="space-y-3">
-                      {wallArtProducts.map((product) => (
-                        <div key={product.id} className="bg-card rounded-lg overflow-hidden shadow-sm border">
-                          <img
-                            src={product.image || "/placeholder.svg"}
-                            alt={product.name}
-                            className="w-full h-24 object-cover"
-                          />
-                          <div className="p-2">
-                            <h4 className="text-xs font-medium mb-1">{product.name}</h4>
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-semibold text-primary">{product.price}</span>
-                              <div className="flex items-center gap-1">
-                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                <span className="text-xs">{product.rating}</span>
-                                <span className="text-xs text-muted-foreground">({product.reviews})</span>
-                              </div>
-                            </div>
-                            <div className="flex gap-1">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs h-7 bg-transparent flex-shrink-0"
-                                onClick={() => handleAddToChat(product.name, product.image)}
-                              >
-                                添加到对话
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs h-7 bg-transparent flex-shrink-0"
-                                onClick={() => handleQuickReplace(product.id, product.name, product.image)}
-                              >
-                                🔄 一键更换
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="text-xs h-7 flex-shrink-0"
-                                onClick={() => handleAddToCart(product.id, product.name, product.price, product.image)}
-                              >
-                                <ShoppingCart className="h-3 w-3 mr-1" />
-                                加购物车
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedFurnitureType === "沙发" && (
-                  <div className="pt-4 border-t">
-                    <h3 className="text-sm font-medium mb-3">沙发推荐</h3>
-                    <div className="space-y-3">
-                      {sofaProducts.map((product) => (
-                        <div key={product.id} className="bg-card rounded-lg overflow-hidden shadow-sm border">
-                          <img
-                            src={product.image || "/placeholder.svg"}
-                            alt={product.name}
-                            className="w-full h-24 object-cover"
-                          />
-                          <div className="p-2">
-                            <h4 className="text-xs font-medium mb-1">{product.name}</h4>
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-semibold text-primary">{product.price}</span>
-                              <div className="flex items-center gap-1">
-                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                <span className="text-xs">{product.rating}</span>
-                                <span className="text-xs text-muted-foreground">({product.reviews})</span>
-                              </div>
-                            </div>
-                            <div className="flex gap-1">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs h-7 bg-transparent flex-shrink-0"
-                                onClick={() => handleAddToChat(product.name, product.image)}
-                              >
-                                添加到对话
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs h-7 bg-transparent flex-shrink-0"
-                                onClick={() => handleQuickReplace(product.id, product.name, product.image)}
-                              >
-                                🔄 一键更换
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="text-xs h-7 flex-shrink-0"
-                                onClick={() => handleAddToCart(product.id, product.name, product.price, product.image)}
-                              >
-                                <ShoppingCart className="h-3 w-3 mr-1" />
-                                加购物车
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedFurnitureType === "茶几" && (
-                  <div className="pt-4 border-t">
-                    <h3 className="text-sm font-medium mb-3">茶几推荐</h3>
-                    <div className="space-y-3">
-                      {coffeeTableProducts.map((product) => (
-                        <div key={product.id} className="bg-card rounded-lg overflow-hidden shadow-sm border">
-                          <img
-                            src={product.image || "/placeholder.svg"}
-                            alt={product.name}
-                            className="w-full h-24 object-cover"
-                          />
-                          <div className="p-2">
-                            <h4 className="text-xs font-medium mb-1">{product.name}</h4>
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-semibold text-primary">{product.price}</span>
-                              <div className="flex items-center gap-1">
-                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                <span className="text-xs">{product.rating}</span>
-                                <span className="text-xs text-muted-foreground">({product.reviews})</span>
-                              </div>
-                            </div>
-                            <div className="flex gap-1">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs h-7 bg-transparent flex-shrink-0"
-                                onClick={() => handleAddToChat(product.name, product.image)}
-                              >
-                                添加到对话
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs h-7 bg-transparent flex-shrink-0"
-                                onClick={() => handleQuickReplace(product.id, product.name, product.image)}
-                              >
-                                🔄 一键更换
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="text-xs h-7 flex-shrink-0"
-                                onClick={() => handleAddToCart(product.id, product.name, product.price, product.image)}
-                              >
-                                <ShoppingCart className="h-3 w-3 mr-1" />
-                                加购物车
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedFurnitureType === "花瓶" && (
-                  <div className="pt-4 border-t">
-                    <h3 className="text-sm font-medium mb-3">花瓶推荐</h3>
-                    <div className="space-y-3">
-                      {vaseProducts.map((product) => (
-                        <div key={product.id} className="bg-card rounded-lg overflow-hidden shadow-sm border">
-                          <img
-                            src={product.image || "/placeholder.svg"}
-                            alt={product.name}
-                            className="w-full h-24 object-cover"
-                          />
-                          <div className="p-2">
-                            <h4 className="text-xs font-medium mb-1">{product.name}</h4>
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-semibold text-primary">{product.price}</span>
-                              <div className="flex items-center gap-1">
-                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                <span className="text-xs">{product.rating}</span>
-                                <span className="text-xs text-muted-foreground">({product.reviews})</span>
-                              </div>
-                            </div>
-                            <div className="flex gap-1">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs h-7 bg-transparent flex-shrink-0"
-                                onClick={() => handleAddToChat(product.name, product.image)}
-                              >
-                                添加到对话
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs h-7 bg-transparent flex-shrink-0"
-                                onClick={() => handleQuickReplace(product.id, product.name, product.image)}
-                              >
-                                🔄 一键更换
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="text-xs h-7 flex-shrink-0"
-                                onClick={() => handleAddToCart(product.id, product.name, product.price, product.image)}
-                              >
-                                <ShoppingCart className="h-3 w-3 mr-1" />
-                                加购物车
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                        ))
+                      })()}
                     </div>
                   </div>
                 )}
@@ -1115,6 +923,40 @@ export default function DesignPage() {
 
         <div className="flex-1 relative flex flex-col h-full min-w-0">
           <div className="flex-1 bg-gradient-to-br from-muted/20 to-background overflow-hidden h-full">
+            {/* 顶部工具栏区域 */}
+            <div className="absolute top-4 left-4 z-10 flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+              {/* 缩放控制 */}
+              <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg flex items-center gap-2">
+                <span className="text-xs text-muted-foreground font-medium hidden sm:inline">缩放</span>
+                <Button size="sm" variant="secondary" onClick={handleZoomIn} className="h-7 w-7 p-0">
+                  <ZoomIn className="h-3 w-3" />
+                </Button>
+                <Button size="sm" variant="secondary" onClick={handleZoomOut} className="h-7 w-7 p-0">
+                  <ZoomOut className="h-3 w-3" />
+                </Button>
+                <span className="text-xs text-muted-foreground px-2 font-medium">
+                  {Math.round(zoomLevel * 100)}%
+                </span>
+              </div>
+              
+              {/* 关键家具信息 */}
+              <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg max-w-xs">
+                <div className="text-xs text-muted-foreground mb-2 font-medium">房间中的关键家具</div>
+                <div className="flex flex-wrap gap-1">
+                  {keyFurniture.map((item, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-1 text-xs px-2 py-1 rounded-md hover:bg-primary/10 cursor-pointer border border-transparent hover:border-primary/20 transition-all duration-200 bg-muted/50"
+                      onClick={() => handleFurnitureClick(item.name)}
+                    >
+                      <span className="text-sm">{item.icon}</span>
+                      <span className="font-medium">{item.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <div className="w-full h-full flex items-center justify-center p-6 xl:p-8">
               <div className="relative w-full max-w-6xl xl:max-w-7xl h-full max-h-full bg-card rounded-lg shadow-lg overflow-hidden">
                 <img
@@ -1123,51 +965,12 @@ export default function DesignPage() {
                   className="w-full h-full object-cover transition-transform duration-300 ease-in-out"
                   style={{ transform: `scale(${zoomLevel})`, transformOrigin: "center top" }}
                 />
-
-                <div className="absolute top-4 left-4 flex gap-2">
-                  <Button size="sm" variant="secondary">
-                    <Move3D className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" variant="secondary">
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" variant="secondary" onClick={handleZoomIn}>
-                    <ZoomIn className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" variant="secondary" onClick={handleZoomOut}>
-                    <ZoomOut className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                <div className="absolute top-4 left-1/2 transform -translate-x-1/2">
-                  <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1 shadow-lg">
-                    <span className="text-xs text-muted-foreground">缩放: {Math.round(zoomLevel * 100)}%</span>
-                  </div>
-                </div>
-
-                <div className="absolute top-4 right-4">
-                  <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
-                    <div className="text-xs text-muted-foreground mb-1">房间中的关键家具：</div>
-                    <div className="flex flex-col gap-1">
-                      {keyFurniture.map((item, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center gap-2 text-sm p-2 rounded-md hover:bg-primary/10 cursor-pointer border border-transparent hover:border-primary/20 transition-all duration-200"
-                          onClick={() => handleFurnitureClick(item.name)}
-                        >
-                          <span>{item.icon}</span>
-                          <span>{item.name}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="w-80 xl:w-96 2xl:w-[400px] border-l border-border bg-card/30 flex flex-col h-full flex-shrink-0">
+        <div className="w-72 xl:w-80 2xl:w-[320px] border-l border-border bg-card/30 flex flex-col h-full flex-shrink-0">
           <div className="p-4 xl:p-5 border-b border-border flex-shrink-0">
             <h2 className="text-lg xl:text-xl font-semibold flex items-center gap-2">
               <MessageCircle className="h-5 w-5 text-primary" />

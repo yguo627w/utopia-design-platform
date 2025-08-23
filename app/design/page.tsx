@@ -25,6 +25,7 @@ import {
   ShoppingCart,
 } from "lucide-react"
 import { useState, useEffect } from "react"
+import { useCart } from "@/hooks/use-cart"
 
 interface ChatMessage {
   type: "ai" | "user"
@@ -70,6 +71,36 @@ export default function DesignPage() {
   const [inputMessage, setInputMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const { addToCart } = useCart()
+
+  // 创建适配useCart hook的购物车添加函数
+  const handleAddToCart = (productId: number, productName: string, productPrice?: string, productImage?: string) => {
+    // 改进的价格解析逻辑
+    let parsedPrice = 0
+    if (productPrice) {
+      // 移除所有非数字字符（除了小数点），然后转换为数字
+      const cleanPrice = productPrice.replace(/[¥,\s]/g, "")
+      parsedPrice = parseFloat(cleanPrice) || 0
+      
+      // 如果解析失败，记录警告
+      if (parsedPrice === 0 && cleanPrice !== "0") {
+        console.warn(`[v0] Failed to parse price: "${productPrice}" -> "${cleanPrice}" -> ${parsedPrice}`)
+      }
+    }
+
+    // 调用useCart hook的addToCart函数
+    addToCart({
+      id: productId,
+      name: productName,
+      price: parsedPrice,
+      image: productImage || "/placeholder.svg",
+      quantity: 1,
+      source: "design" as const,
+    })
+
+    setToastMessage("添加成功，稍后可在商城结算")
+    setShowToast(true)
+  }
 
   useEffect(() => {
     const uploadedImage = sessionStorage.getItem("uploadedImage")
@@ -173,7 +204,7 @@ export default function DesignPage() {
 
   const wardrobeProducts = [
     {
-      id: 1,
+      id: 101,
       name: "现代简约衣柜",
       image: "https://malexa.bj.bcebos.com/Utopia/%E8%A1%A3%E6%9F%9C.jpg",
       modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E8%A1%A3%E6%9F%9C%E4%BF%AE%E6%94%B91.jpg",
@@ -185,7 +216,7 @@ export default function DesignPage() {
 
   const sofaProducts = [
     {
-      id: 1,
+      id: 201,
       name: "条纹三人沙发",
       image: "https://malexa.bj.bcebos.com/Utopia/%E6%B2%99%E5%8F%911.jpg",
       modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E6%B2%99%E5%8F%91%E4%BF%AE%E6%94%B91.jpg",
@@ -197,7 +228,7 @@ export default function DesignPage() {
 
   const coffeeTableProducts = [
     {
-      id: 1,
+      id: 301,
       name: "现代简约茶几",
       image: "https://malexa.bj.bcebos.com/Utopia/%E8%8C%B6%E5%87%A01.jpg",
       modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E8%8C%B6%E5%87%A0%E4%BF%AE%E6%94%B91.jpg",
@@ -209,7 +240,7 @@ export default function DesignPage() {
 
   const vaseProducts = [
     {
-      id: 1,
+      id: 401,
       name: "现代简约花瓶",
       image: "https://malexa.bj.bcebos.com/Utopia/%E8%8A%B1%E7%93%B62.jpg",
       modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E8%8A%B1%E7%93%B6%E4%BF%AE%E6%94%B92.jpg",
@@ -222,7 +253,7 @@ export default function DesignPage() {
   // 卧室家具产品数据
   const bedSheetProducts = [
     {
-      id: 1,
+      id: 501,
       name: "现代简约床单",
       image: "https://malexa.bj.bcebos.com/Utopia/%E5%BA%8A%E5%8D%951.jpg",
       modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E5%BA%8A%E5%8D%95%E4%BF%AE%E6%94%B91.jpg",
@@ -234,7 +265,7 @@ export default function DesignPage() {
 
   const wallArtProducts = [
     {
-      id: 1,
+      id: 601,
       name: "现代简约挂画",
       image: "https://malexa.bj.bcebos.com/Utopia/%E6%8C%82%E7%94%BB1.jpg",
       modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E6%8C%82%E7%94%BB%E4%BF%AE%E6%94%B91.jpg",
@@ -373,60 +404,6 @@ export default function DesignPage() {
 
   const handleRemoveImage = (imageId: string) => {
     setChatImages((prev) => prev.filter((img) => img.id !== imageId))
-  }
-
-  const handleAddToCart = (productId: number, productName: string, productPrice?: string, productImage?: string) => {
-    console.log(`[v0] Adding ${productName} to shopping cart`)
-
-    const existingCart = JSON.parse(localStorage.getItem("sharedCart") || "[]")
-
-    // 改进的价格解析逻辑
-    let parsedPrice = 0
-    if (productPrice) {
-      // 移除所有非数字字符（除了小数点），然后转换为数字
-      const cleanPrice = productPrice.replace(/[¥,\s]/g, "")
-      parsedPrice = parseFloat(cleanPrice) || 0
-      
-      // 如果解析失败，记录警告
-      if (parsedPrice === 0 && cleanPrice !== "0") {
-        console.warn(`[v0] Failed to parse price: "${productPrice}" -> "${cleanPrice}" -> ${parsedPrice}`)
-      }
-    }
-
-    const newItem = {
-      id: productId, // 使用产品ID而不是时间戳
-      name: productName,
-      price: parsedPrice,
-      image: productImage || "/placeholder.svg",
-      quantity: 1,
-      source: "design",
-      addedAt: Date.now(), // 添加时间戳用于排序
-    }
-
-    // 使用产品ID而不是名称来查找现有商品
-    const existingItemIndex = existingCart.findIndex((item: any) => item.id === productId)
-
-    if (existingItemIndex >= 0) {
-      // 如果商品已存在，增加数量
-      existingCart[existingItemIndex].quantity += 1
-      existingCart[existingItemIndex].addedAt = Date.now() // 更新时间戳
-      console.log(`[v0] Updated existing item quantity: ${existingCart[existingItemIndex].quantity}`)
-    } else {
-      // 添加新商品
-      existingCart.push(newItem)
-      console.log(`[v0] Added new item to cart: ${productName}`)
-    }
-
-    // 按添加时间排序，最新的在前面
-    existingCart.sort((a: any, b: any) => b.addedAt - a.addedAt)
-
-    localStorage.setItem("sharedCart", JSON.stringify(existingCart))
-
-    // 触发自定义事件通知其他组件购物车已更新
-    window.dispatchEvent(new CustomEvent("cartUpdated", { detail: existingCart }))
-
-    setToastMessage("添加成功，稍后可在商城结算")
-    setShowToast(true)
   }
 
   const handleZoomIn = () => {

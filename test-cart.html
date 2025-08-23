@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>购物车测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            border: 1px solid #ddd;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .product-item {
+            border: 1px solid #eee;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .product-info {
+            flex: 1;
+        }
+        .product-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .cart-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .cart-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .cart-item img {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            margin-right: 10px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>购物车功能测试页面</h1>
+    
+    <div class="test-section">
+        <h2>测试商品列表</h2>
+        <div class="product-item">
+            <div class="product-info">
+                <h3>现代简约衣柜 (ID: 101)</h3>
+                <p>价格: ¥2,899</p>
+                <p>来源: Design页面</p>
+            </div>
+            <img src="https://malexa.bj.bcebos.com/Utopia/%E8%A1%A3%E6%9F%9C.jpg" alt="衣柜" class="product-image">
+            <button onclick="addToCart(101, '现代简约衣柜', 2899, 'https://malexa.bj.bcebos.com/Utopia/%E8%A1%A3%E6%9F%9C.jpg', 'design')">
+                添加到购物车
+            </button>
+        </div>
+        
+        <div class="product-item">
+            <div class="product-info">
+                <h3>条纹三人沙发 (ID: 201)</h3>
+                <p>价格: ¥4,299</p>
+                <p>来源: Design页面</p>
+            </div>
+            <img src="https://malexa.bj.bcebos.com/Utopia/%E6%B2%99%E5%8F%911.jpg" alt="沙发" class="product-image">
+            <button onclick="addToCart(201, '条纹三人沙发', 4299, 'https://malexa.bj.bcebos.com/Utopia/%E6%B2%99%E5%8F%911.jpg', 'design')">
+                添加到购物车
+            </button>
+        </div>
+        
+        <div class="product-item">
+            <div class="product-info">
+                <h3>北欧风三人布艺沙发 (ID: 1001)</h3>
+                <p>价格: ¥2,399</p>
+                <p>来源: Marketplace页面</p>
+            </div>
+            <img src="/nordic-fabric-sofa.png" alt="北欧沙发" class="product-image">
+            <button onclick="addToCart(1001, '北欧风三人布艺沙发', 2399, '/nordic-fabric-sofa.png', 'marketplace')">
+                添加到购物车
+            </button>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>当前购物车状态</h2>
+        <button onclick="displayCart()">刷新购物车显示</button>
+        <button onclick="clearCart()">清空购物车</button>
+        <div id="cartDisplay" class="cart-display">
+            <p>点击"刷新购物车显示"查看当前购物车内容</p>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>localStorage 状态</h2>
+        <button onclick="showLocalStorage()">查看localStorage</button>
+        <button onclick="clearLocalStorage()">清空localStorage</button>
+        <div id="localStorageDisplay"></div>
+    </div>
+
+    <script>
+        // 模拟购物车功能
+        function addToCart(id, name, price, image, source) {
+            const existingCart = JSON.parse(localStorage.getItem("sharedCart") || "[]")
+            
+            const newItem = {
+                id: id,
+                name: name,
+                price: price,
+                image: image,
+                quantity: 1,
+                source: source,
+                addedAt: Date.now()
+            }
+            
+            // 检查商品是否已存在
+            const existingItemIndex = existingCart.findIndex(item => item.id === id)
+            
+            if (existingItemIndex >= 0) {
+                // 如果商品已存在，增加数量
+                existingCart[existingItemIndex].quantity += 1
+                existingCart[existingItemIndex].addedAt = Date.now()
+                console.log(`更新商品数量: ${existingCart[existingItemIndex].quantity}`)
+            } else {
+                // 添加新商品
+                existingCart.push(newItem)
+                console.log(`添加新商品: ${name}`)
+            }
+            
+            // 按添加时间排序
+            existingCart.sort((a, b) => b.addedAt - a.addedAt)
+            
+            // 保存到localStorage
+            localStorage.setItem("sharedCart", JSON.stringify(existingCart))
+            
+            // 触发自定义事件
+            window.dispatchEvent(new CustomEvent("cartUpdated", { 
+                detail: { 
+                    cart: existingCart,
+                    newItem: newItem,
+                    action: existingItemIndex >= 0 ? "updated" : "added"
+                } 
+            }))
+            
+            alert(`已添加商品: ${name}`)
+            displayCart()
+        }
+        
+        function displayCart() {
+            const cart = JSON.parse(localStorage.getItem("sharedCart") || "[]")
+            const display = document.getElementById("cartDisplay")
+            
+            if (cart.length === 0) {
+                display.innerHTML = "<p>购物车为空</p>"
+                return
+            }
+            
+            let html = "<h3>购物车商品:</h3>"
+            let totalPrice = 0
+            
+            cart.forEach(item => {
+                totalPrice += item.price * item.quantity
+                html += `
+                    <div class="cart-item">
+                        <img src="${item.image}" alt="${item.name}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMCAxMkwyOCAyMEgyMFYyOEgxMlYyMEgyMFYxMloiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+'">
+                        <div style="flex: 1;">
+                            <strong>${item.name}</strong><br>
+                            <small>ID: ${item.id} | 来源: ${item.source} | 价格: ¥${item.price}</small>
+                        </div>
+                        <div style="text-align: right;">
+                            数量: ${item.quantity}<br>
+                            <small>小计: ¥${item.price * item.quantity}</small>
+                        </div>
+                    </div>
+                `
+            })
+            
+            html += `<p><strong>总计: ¥${totalPrice}</strong></p>`
+            display.innerHTML = html
+        }
+        
+        function clearCart() {
+            localStorage.removeItem("sharedCart")
+            displayCart()
+            alert("购物车已清空")
+        }
+        
+        function showLocalStorage() {
+            const display = document.getElementById("localStorageDisplay")
+            const cart = localStorage.getItem("sharedCart")
+            display.innerHTML = `
+                <h3>localStorage 内容:</h3>
+                <pre>${cart || '空'}</pre>
+            `
+        }
+        
+        function clearLocalStorage() {
+            localStorage.removeItem("sharedCart")
+            showLocalStorage()
+            alert("localStorage 已清空")
+        }
+        
+        // 监听购物车更新事件
+        window.addEventListener("cartUpdated", function(event) {
+            console.log("购物车更新事件:", event.detail)
+            displayCart()
+        })
+        
+        // 页面加载时显示购物车
+        window.addEventListener("load", function() {
+            displayCart()
+        })
+    </script>
+</body>
+</html>

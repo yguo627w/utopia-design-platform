@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -9,117 +9,23 @@ import { Checkbox } from "@/components/ui/checkbox"
 import Navigation from "@/components/navigation"
 import StepIndicator from "@/components/step-indicator"
 import { Search, Filter, ShoppingCart, Heart, Star, Grid, List, X, Plus, Minus } from "lucide-react"
+import { useCart } from "@/hooks/use-cart"
 
 export default function MarketplacePage() {
-  const [cartItems, setCartItems] = useState<any[]>([])
   const [isCartOpen, setIsCartOpen] = useState(false)
-
-  useEffect(() => {
-    const loadCartFromStorage = () => {
-      const sharedCart = JSON.parse(localStorage.getItem("sharedCart") || "[]")
-      const defaultCart = [
-        {
-          id: 1001,
-          name: "北欧风三人布艺沙发",
-          price: 2399,
-          image: "/nordic-fabric-sofa.png",
-          quantity: 1,
-          source: "marketplace",
-          addedAt: Date.now(),
-        },
-      ]
-
-      // 合并默认购物车和从设计页面添加的商品
-      const mergedCart = [...defaultCart, ...sharedCart]
-      
-      // 按添加时间排序，最新的在底部
-      mergedCart.sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0))
-      
-      setCartItems(mergedCart)
-      console.log("[Marketplace] Loaded cart:", mergedCart)
-    }
-
-    loadCartFromStorage()
-
-    const handleStorageChange = () => {
-      console.log("[Marketplace] Storage changed, reloading cart")
-      loadCartFromStorage()
-    }
-
-    const handleCartUpdated = (event: CustomEvent) => {
-      console.log("[Marketplace] Cart updated event received:", event.detail)
-      loadCartFromStorage()
-    }
-
-    window.addEventListener("storage", handleStorageChange)
-    window.addEventListener("cartUpdated", handleCartUpdated as EventListener)
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange)
-      window.removeEventListener("cartUpdated", handleCartUpdated as EventListener)
-    }
-  }, [])
-
-  const addToCart = (product: any) => {
-    console.log("[v0] Adding product to cart:", product)
-    const existingItem = cartItems.find((item) => item.id === product.id)
-
-    if (existingItem) {
-      console.log("[v0] Product already exists, updating quantity")
-      // If item already exists, increase quantity
-      updateQuantity(product.id, existingItem.quantity + 1)
-    } else {
-      console.log("[v0] Adding new product to cart")
-      // Add new item to cart
-      const newItem = {
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        image: product.image,
-        quantity: 1,
-        source: "marketplace",
-        addedAt: Date.now(),
-      }
-
-      const updatedCart = [...cartItems, newItem]
-      setCartItems(updatedCart)
-      console.log("[v0] Updated cart:", updatedCart)
-
-      // Update localStorage for shared cart items
-      const sharedItems = updatedCart.filter((item) => item.source === "design")
-      localStorage.setItem("sharedCart", JSON.stringify(sharedItems))
-    }
-  }
-
-  const updateQuantity = (id: number, newQuantity: number) => {
-    console.log("[v0] Updating quantity for product", id, "to", newQuantity)
-    let updatedCart
-    if (newQuantity <= 0) {
-      console.log("[v0] Removing product from cart")
-      updatedCart = cartItems.filter((item) => item.id !== id)
-    } else {
-      console.log("[v0] Updating product quantity")
-      updatedCart = cartItems.map((item) => (item.id === id ? { ...item, quantity: newQuantity } : item))
-    }
-
-    setCartItems(updatedCart)
-    console.log("[v0] Cart after quantity update:", updatedCart)
-
-    const sharedItems = updatedCart.filter((item) => item.source === "design")
-    localStorage.setItem("sharedCart", JSON.stringify(sharedItems))
-  }
-
-  const getTotalPrice = () => {
-    return cartItems.reduce((total, item) => total + item.price * item.quantity, 0)
-  }
-
-  const getTotalItems = () => {
-    return cartItems.reduce((total, item) => total + item.quantity, 0)
-  }
+  const {
+    cartItems,
+    isLoading,
+    addToCart,
+    updateQuantity,
+    removeFromCart,
+    getTotalPrice,
+    getTotalItems,
+  } = useCart()
 
   const products = [
     {
-      id: 1,
+      id: 1001,
       name: "北欧风三人布艺沙发",
       brand: "简约现代家具",
       price: 2399,
@@ -131,7 +37,7 @@ export default function MarketplacePage() {
       discount: "限时特惠",
     },
     {
-      id: 2,
+      id: 1002,
       name: "现代简约茶几",
       brand: "客厅专家",
       price: 899,
@@ -143,7 +49,7 @@ export default function MarketplacePage() {
       discount: "免运费",
     },
     {
-      id: 3,
+      id: 1003,
       name: "轻奢风落地灯",
       brand: "客厅灯具专家",
       price: 599,
@@ -155,7 +61,7 @@ export default function MarketplacePage() {
       discount: "以旧换新",
     },
     {
-      id: 4,
+      id: 1004,
       name: "新中式实木餐桌组合",
       brand: "家用小户型4人6人饭桌子",
       price: 3599,
@@ -167,7 +73,7 @@ export default function MarketplacePage() {
       discount: "免运费",
     },
     {
-      id: 5,
+      id: 1005,
       name: "工业风多层书架",
       brand: "客厅书房置物架展示架",
       price: 1299,
@@ -179,7 +85,7 @@ export default function MarketplacePage() {
       discount: "限时特惠",
     },
     {
-      id: 6,
+      id: 1006,
       name: "现代简约双人床架",
       brand: "1.8米主卧软包靠背床",
       price: 3899,
@@ -211,19 +117,36 @@ export default function MarketplacePage() {
             <h1 className="text-3xl font-bold mb-2">家居商城</h1>
             <p className="text-muted-foreground">从设计到购买，一站式打造你的理想空间</p>
           </div>
-          <Card className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20 max-w-xs">
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-primary text-sm mb-1">寻找专业施工服务？</h3>
-                  <p className="text-xs text-muted-foreground">一键获取本地报价</p>
+          <div className="flex gap-3">
+            <Card className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20 max-w-xs">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-primary text-sm mb-1">寻找专业施工服务？</h3>
+                    <p className="text-xs text-muted-foreground">一键获取本地报价</p>
+                  </div>
+                  <Button size="sm" className="ml-3 text-xs px-3 py-1">
+                    立即咨询
+                  </Button>
                 </div>
-                <Button size="sm" className="ml-3 text-xs px-3 py-1">
-                  立即咨询
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const cart = JSON.parse(localStorage.getItem("sharedCart") || "[]")
+                const currentCart = cartItems
+                console.log("localStorage cart:", cart)
+                console.log("Current cart state:", currentCart)
+                const designItems = currentCart.filter((item: any) => item.source === "design")
+                const marketplaceItems = currentCart.filter((item: any) => item.source === "marketplace")
+                alert(`localStorage: ${cart.length} 件商品\n当前状态: ${currentCart.length} 件商品\n设计页面: ${designItems.length} 件\n商城页面: ${marketplaceItems.length} 件`)
+              }}
+            >
+              调试购物车
+            </Button>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-5 gap-6">
@@ -379,7 +302,14 @@ export default function MarketplacePage() {
                         </div>
                       </div>
 
-                      <Button className="w-full" onClick={() => addToCart(product)}>
+                      <Button className="w-full" onClick={() => addToCart({
+                        id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        image: product.image,
+                        quantity: 1,
+                        source: "marketplace" as const
+                      })}>
                         <ShoppingCart className="mr-2 h-4 w-4" />
                         加入购物车
                       </Button>

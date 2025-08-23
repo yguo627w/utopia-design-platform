@@ -35,6 +35,7 @@ export default function PreviewPage() {
   // 渲染状态管理
   const [isRendering, setIsRendering] = useState(false)
   const [renderedImage, setRenderedImage] = useState<string | null>(null)
+  const [renderError, setRenderError] = useState<string | null>(null)
 
   useEffect(() => {
     const storedImage = sessionStorage.getItem("previewImage")
@@ -102,6 +103,7 @@ export default function PreviewPage() {
     }
 
     setIsRendering(true)
+    setRenderError(null) // 清除之前的错误
     console.log(`[Preview] 开始渲染，效果：${getCurrentEffectDescription()}`)
     console.log(`[Preview] 使用prompt：${getRenderingPrompt()}`)
 
@@ -122,16 +124,33 @@ export default function PreviewPage() {
       }
 
       const data = await response.json()
-      const generatedImageUrl = data.url
+      console.log("[Preview] API响应数据:", data)
+      
+      // 根据API响应结构获取图片URL
+      let generatedImageUrl = null
+      if (data.imageUrl) {
+        // API返回imageUrl字段的情况
+        generatedImageUrl = data.imageUrl
+      } else if (data.url) {
+        // 直接返回URL的情况
+        generatedImageUrl = data.url
+      } else if (data.data && data.data[0] && data.data[0].url) {
+        // 嵌套在data数组中的情况
+        generatedImageUrl = data.data[0].url
+      }
 
       if (generatedImageUrl) {
         setRenderedImage(generatedImageUrl)
         console.log("[Preview] 渲染完成，图片URL:", generatedImageUrl)
       } else {
-        console.log("[Preview] 渲染响应中没有图片URL")
+        const errorMsg = "渲染响应中没有图片URL"
+        console.log("[Preview]", errorMsg)
+        setRenderError(errorMsg)
       }
     } catch (error) {
-      console.log("[Preview] 渲染过程中发生错误:", error)
+      const errorMsg = error instanceof Error ? error.message : "渲染过程中发生未知错误"
+      console.log("[Preview] 渲染过程中发生错误:", errorMsg)
+      setRenderError(errorMsg)
     } finally {
       setIsRendering(false)
     }
@@ -300,6 +319,22 @@ export default function PreviewPage() {
                         </>
                       )}
                     </Button>
+                    
+                    {/* 重置按钮 - 当有渲染结果时显示 */}
+                    {renderedImage && !isRendering && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          setRenderedImage(null)
+                          setRenderError(null)
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        重置
+                      </Button>
+                    )}
                   </div>
 
                   {/* 工具栏：旋转/缩放 */}
@@ -337,6 +372,16 @@ export default function PreviewPage() {
                       {renderedImage ? `渲染完成：${getCurrentEffectDescription()}` : getCurrentEffectDescription()}
                     </div>
                   </div>
+                  
+                  {/* 错误提示 */}
+                  {renderError && (
+                    <div className="absolute top-4 left-4">
+                      <div className="bg-red-600 text-white px-3 py-1 rounded-lg text-sm max-w-xs">
+                        <div className="font-medium">渲染失败</div>
+                        <div className="text-xs opacity-90">{renderError}</div>
+                      </div>
+                    </div>
+                  )}
                   
                   {/* 渲染状态指示器 */}
                   {isRendering && (

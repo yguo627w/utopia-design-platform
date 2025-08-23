@@ -355,7 +355,7 @@ export default function DesignPage() {
     // 触发自定义事件通知其他组件购物车已更新
     window.dispatchEvent(new CustomEvent("cartUpdated", { detail: existingCart }))
 
-    setToastMessage(`已添加 ${productName} 到购物车`)
+    setToastMessage("添加成功，稍后可在商城结算")
     setShowToast(true)
   }
 

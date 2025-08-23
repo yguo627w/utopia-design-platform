@@ -18,6 +18,8 @@ import {
   Flower,
   ShoppingCart,
   Edit,
+  Leaf,
+  Cloud,
 } from "lucide-react"
 import Link from "next/link"
 import { useState, useEffect } from "react"
@@ -25,6 +27,10 @@ import { useState, useEffect } from "react"
 export default function PreviewPage() {
   const [previewImage, setPreviewImage] = useState("/nordic-living-room.png")
   const [zoomLevel, setZoomLevel] = useState(1)
+  
+  // 渲染效果状态管理
+  const [selectedTime, setSelectedTime] = useState<"day" | "night">("day")
+  const [selectedSeason, setSelectedSeason] = useState<"spring" | "summer" | "autumn" | "winter">("spring")
 
   useEffect(() => {
     const storedImage = sessionStorage.getItem("previewImage")
@@ -44,6 +50,24 @@ export default function PreviewPage() {
 
   const handleReset = () => {
     setZoomLevel(1)
+  }
+
+  // 渲染效果处理函数
+  const handleTimeChange = (time: "day" | "night") => {
+    setSelectedTime(time)
+    console.log(`[Preview] 切换到${time === "day" ? "白天" : "夜晚"}效果`)
+  }
+
+  const handleSeasonChange = (season: "spring" | "summer" | "autumn" | "winter") => {
+    setSelectedSeason(season)
+    console.log(`[Preview] 切换到${season === "spring" ? "春季" : season === "summer" ? "夏季" : season === "autumn" ? "秋季" : "冬季"}效果`)
+  }
+
+  // 获取当前选中的效果描述
+  const getCurrentEffectDescription = () => {
+    const timeText = selectedTime === "day" ? "白天" : "夜晚"
+    const seasonText = selectedSeason === "spring" ? "春季" : selectedSeason === "summer" ? "夏季" : selectedSeason === "autumn" ? "秋季" : "冬季"
+    return `${timeText} + ${seasonText}效果`
   }
 
   const designOptions = [
@@ -112,38 +136,84 @@ export default function PreviewPage() {
             <Card className="mb-6">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Tabs defaultValue="day" className="w-auto">
-                      <TabsList className="bg-card">
-                        <TabsTrigger value="day" className="flex items-center gap-1">
+                  <div className="flex flex-col gap-3">
+                    {/* 一级按钮：时间效果 */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-muted-foreground">时间效果：</span>
+                      <div className="flex gap-1">
+                        <Button 
+                          size="sm" 
+                          variant={selectedTime === "day" ? "default" : "outline"}
+                          onClick={() => handleTimeChange("day")}
+                          className="flex items-center gap-1"
+                        >
                           <Sun className="h-4 w-4" />
                           白天效果
-                        </TabsTrigger>
-                        <TabsTrigger value="night" className="flex items-center gap-1">
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant={selectedTime === "night" ? "default" : "outline"}
+                          onClick={() => handleTimeChange("night")}
+                          className="flex items-center gap-1"
+                        >
                           <Moon className="h-4 w-4" />
                           夜晚效果
-                        </TabsTrigger>
-                      </TabsList>
-                    </Tabs>
-                    <div className="flex gap-1">
-                      <Button size="sm" className="bg-primary text-white">
-                        <Flower className="h-4 w-4 mr-1" />
-                        春季氛围
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Sun className="h-4 w-4 mr-1" />
-                        夏季氛围
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Flower className="h-4 w-4 mr-1" />
-                        秋季氛围
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Snowflake className="h-4 w-4 mr-1" />
-                        冬季氛围
-                      </Button>
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* 二级按钮：季节效果 */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-muted-foreground">季节效果：</span>
+                      <div className="flex gap-1">
+                        <Button 
+                          size="sm" 
+                          variant={selectedSeason === "spring" ? "default" : "outline"}
+                          onClick={() => handleSeasonChange("spring")}
+                          className="flex items-center gap-1"
+                        >
+                          <Flower className="h-4 w-4" />
+                          春季效果
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant={selectedSeason === "summer" ? "default" : "outline"}
+                          onClick={() => handleSeasonChange("summer")}
+                          className="flex items-center gap-1"
+                        >
+                          <Sun className="h-4 w-4" />
+                          夏季效果
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant={selectedSeason === "autumn" ? "default" : "outline"}
+                          onClick={() => handleSeasonChange("autumn")}
+                          className="flex items-center gap-1"
+                        >
+                          <Leaf className="h-4 w-4" />
+                          秋季效果
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant={selectedSeason === "winter" ? "default" : "outline"}
+                          onClick={() => handleSeasonChange("winter")}
+                          className="flex items-center gap-1"
+                        >
+                          <Snowflake className="h-4 w-4" />
+                          冬季效果
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* 当前效果显示 */}
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">
+                        当前：{getCurrentEffectDescription()}
+                      </Badge>
                     </div>
                   </div>
+
+                  {/* 工具栏：旋转/缩放 */}
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" onClick={handleReset}>
                       <RotateCcw className="h-4 w-4" />
@@ -171,6 +241,13 @@ export default function PreviewPage() {
                       transformOrigin: "center top",
                     }}
                   />
+                  
+                  {/* 效果叠加层 */}
+                  <div className="absolute top-4 right-4">
+                    <div className="bg-black/60 text-white px-3 py-1 rounded-lg text-sm">
+                      {getCurrentEffectDescription()}
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

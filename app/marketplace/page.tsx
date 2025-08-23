@@ -24,39 +24,39 @@ export default function MarketplacePage() {
           price: 2399,
           image: "/nordic-fabric-sofa.png",
           quantity: 1,
-        },
-        {
-          id: 1002,
-          name: "现代简约茶几",
-          price: 899,
-          image: "/wooden-coffee-table.png",
-          quantity: 2,
-        },
-        {
-          id: 1003,
-          name: "轻奢风落地灯",
-          price: 599,
-          image: "/modern-floor-lamp.png",
-          quantity: 1,
+          source: "marketplace",
+          addedAt: Date.now(),
         },
       ]
 
+      // 合并默认购物车和从设计页面添加的商品
       const mergedCart = [...defaultCart, ...sharedCart]
+      
+      // 按添加时间排序，最新的在底部
+      mergedCart.sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0))
+      
       setCartItems(mergedCart)
+      console.log("[Marketplace] Loaded cart:", mergedCart)
     }
 
     loadCartFromStorage()
 
     const handleStorageChange = () => {
+      console.log("[Marketplace] Storage changed, reloading cart")
+      loadCartFromStorage()
+    }
+
+    const handleCartUpdated = (event: CustomEvent) => {
+      console.log("[Marketplace] Cart updated event received:", event.detail)
       loadCartFromStorage()
     }
 
     window.addEventListener("storage", handleStorageChange)
-    window.addEventListener("cartUpdated", handleStorageChange)
+    window.addEventListener("cartUpdated", handleCartUpdated as EventListener)
 
     return () => {
       window.removeEventListener("storage", handleStorageChange)
-      window.removeEventListener("cartUpdated", handleStorageChange)
+      window.removeEventListener("cartUpdated", handleCartUpdated as EventListener)
     }
   }, [])
 
@@ -78,6 +78,7 @@ export default function MarketplacePage() {
         image: product.image,
         quantity: 1,
         source: "marketplace",
+        addedAt: Date.now(),
       }
 
       const updatedCart = [...cartItems, newItem]
@@ -429,7 +430,7 @@ export default function MarketplacePage() {
                         <p className="text-primary font-bold">¥{item.price}</p>
                         {item.source === "design" && (
                           <Badge variant="outline" className="text-xs mt-1">
-                            从设计页添加
+                            设计中添加
                           </Badge>
                         )}
                       </div>

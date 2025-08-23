@@ -129,11 +129,11 @@ export default function HomePage() {
 
   const styleCards = [
     {
-      name: "简约风客厅",
+      name: "北欧风客厅",
       image: "https://b.bdstatic.com/searchbox/image/gcp/20250823/3667326276.jpg",
     },
     {
-      name: "温馨风卧室",
+      name: "极简风卧室",
       image: "https://b.bdstatic.com/searchbox/image/gcp/20250823/806565301.png",
     },
     {

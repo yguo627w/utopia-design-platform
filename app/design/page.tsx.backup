@@ -295,7 +295,7 @@ export default function DesignPage() {
   ]
 
   const getKeyFurniture = () => {
-    if (selectedStyleTitle === "北欧风客厅") {
+    if (selectedStyleTitle === "北欧简约风客厅") {
       return [
         { name: "沙发", icon: "🛋️" },
         { name: "茶几", icon: "🪑" },
@@ -303,14 +303,7 @@ export default function DesignPage() {
         { name: "落地灯", icon: "💡" },
       ]
     }
-    if (selectedStyleTitle === "极简风卧室") {
-      return [
-        { name: "床", icon: "🛏️" },
-        { name: "衣柜", icon: "🚪" },
-        { name: "床头柜", icon: "🪑" },
-        { name: "台灯", icon: "💡" },
-      ]
-    }
+    if (selectedStyleTitle === "北欧简约风客厅") {
     return [
       { name: "床", icon: "🛏️" },
       { name: "衣柜", icon: "🚪" },

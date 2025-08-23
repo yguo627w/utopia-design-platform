@@ -156,16 +156,15 @@ export default function DesignPage() {
   const getFurnitureTypes = () => {
     if (selectedRoom === "卧室") {
       return [
-        { name: "衣柜", count: "12个产品", icon: "🚪" },
-        { name: "储物", count: "8个产品", icon: "📦" },
-        { name: "灯具", count: "15个产品", icon: "💡" },
-        { name: "床", count: "9个产品", icon: "🛏️" },
+        { name: "衣柜", count: "3个产品", icon: "🚪" },
+        { name: "床单", count: "3个产品", icon: "🛏️" },
+        { name: "挂画", count: "3个产品", icon: "🖼️" },
       ]
     }
     return [
       { name: "沙发", count: "3个产品", icon: "🛋️" },
       { name: "茶几", count: "3个产品", icon: "🪑" },
-      { name: "花瓶", count: "3个产品", icon: "🪑" },
+      { name: "花瓶", count: "3个产品", icon: "🏺" },
       // { name: "储物柜", count: "9个产品", icon: "🗄️" },
       // { name: "灯具灯饰", count: "11个产品", icon: "💡" },
       // { name: "装饰品", count: "14个产品", icon: "🎨" },
@@ -176,32 +175,12 @@ export default function DesignPage() {
     {
       id: 1,
       name: "现代简约衣柜",
-      image:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/%E8%A1%A3%E6%9F%9C-oBoPefQmZ6qTGNyZoROk4Kqg0DH9Lc.webp",
-      modifiedImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/%E8%A1%A3%E6%9F%9C-oBoPefQmZ6qTGNyZoROk4Kqg0DH9Lc.webp",
+      image: "https://malexa.bj.bcebos.com/Utopia/%E8%A1%A3%E6%9F%9C.jpg",
+      modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E8%A1%A3%E6%9F%9C%E4%BF%AE%E6%94%B91.jpg",
       price: "¥2,899",
       rating: 4.8,
       reviews: 128,
-    },
-    {
-      id: 2,
-      name: "简约斗柜",
-      image:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/1%E6%96%97%E6%9F%9C-o6aOXgGVKgppXPNAVKzDFaUawrPmKF.webp",
-      modifiedImage: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/1%E6%96%97%E6%9F%9C-o6aOXgGVKgppXPNAVKzDFaUawrPmKF.webp",
-      price: "¥3,299",
-      rating: 4.7,
-      reviews: 96,
-    },
-    {
-      id: 3,
-      name: "轻奢风衣柜",
-      image: "/luxury-wardrobe.png",
-      modifiedImage: "/luxury-wardrobe.png",
-      price: "¥4,599",
-      rating: 4.9,
-      reviews: 84,
-    },
+    }
   ]
 
   const sofaProducts = [
@@ -213,25 +192,7 @@ export default function DesignPage() {
       price: "¥4,299",
       rating: 4.8,
       reviews: 156,
-    },
-    {
-      id: 2,
-      name: "现代布艺沙发",
-      image: "https://malexa.bj.bcebos.com/Utopia/%E6%B2%99%E5%8F%912.jpg",
-      modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E6%B2%99%E5%8F%91%E4%BF%AE%E6%94%B92.png",
-      price: "¥3,899",
-      rating: 4.7,
-      reviews: 203,
-    },
-    {
-      id: 3,
-      name: "北欧风沙发",
-      image: "https://malexa.bj.bcebos.com/Utopia/%E6%B2%99%E5%8F%913.jpg",
-      modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E6%B2%99%E5%8F%91%E4%BF%AE%E6%94%B93.png",
-      price: "¥5,199",
-      rating: 4.9,
-      reviews: 128,
-    },
+    }
   ]
 
   const coffeeTableProducts = [
@@ -243,24 +204,6 @@ export default function DesignPage() {
       price: "¥1,899",
       rating: 4.8,
       reviews: 89,
-    },
-    {
-      id: 2,
-      name: "北欧风茶几",
-      image: "https://malexa.bj.bcebos.com/Utopia/%E8%8C%B6%E5%87%A02.jpg",
-      modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E8%8C%B6%E5%87%A0%E4%BF%AE%E6%94%B92.jpg",
-      price: "¥2,299",
-      rating: 4.7,
-      reviews: 156,
-    },
-    {
-      id: 3,
-      name: "轻奢风茶几",
-      image: "https://malexa.bj.bcebos.com/Utopia/%E8%8C%B6%E5%87%A03.jpg",
-      modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E8%8C%B6%E5%87%A0%E4%BF%AE%E6%94%B93.jpg",
-      price: "¥3,199",
-      rating: 4.9,
-      reviews: 112,
     },
   ]
 
@@ -274,23 +217,30 @@ export default function DesignPage() {
       rating: 4.8,
       reviews: 89,
     },
+  ]
+
+  // 卧室家具产品数据
+  const bedSheetProducts = [
     {
-      id: 2,
-      name: "北欧风花瓶",
-      image: "https://malexa.bj.bcebos.com/Utopia/%E8%8A%B1%E7%93%B63.jpg",
-      modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E8%8A%B1%E7%93%B6%E4%BF%AE%E6%94%B93.jpg",
-      price: "¥399",
-      rating: 4.7,
-      reviews: 156,
-    },
+      id: 1,
+      name: "现代简约床单",
+      image: "https://malexa.bj.bcebos.com/Utopia/%E5%BA%8A%E5%8D%951.jpg",
+      modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E5%BA%8A%E5%8D%95%E4%BF%AE%E6%94%B91.jpg",
+      price: "¥299",
+      rating: 4.8,
+      reviews: 89,
+    }
+  ]
+
+  const wallArtProducts = [
     {
-      id: 3,
-      name: "轻奢风花瓶",
-      image: "https://malexa.bj.bcebos.com/Utopia/%E8%8A%B1%E7%93%B64.jpg",
-      modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E8%8A%B1%E7%93%B6%E4%BF%AE%E6%94%B94.jpg",
-      price: "¥599",
-      rating: 4.9,
-      reviews: 112,
+      id: 1,
+      name: "现代简约挂画",
+      image: "https://malexa.bj.bcebos.com/Utopia/%E6%8C%82%E7%94%BB1.jpg",
+      modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E6%8C%82%E7%94%BB%E4%BF%AE%E6%94%B91.jpg",
+      price: "¥299",
+      rating: 4.8,
+      reviews: 89,
     },
   ]
 
@@ -305,16 +255,16 @@ export default function DesignPage() {
     }
     if (selectedStyleTitle === "极简风卧室") {
       return [
-        { name: "床", icon: "🛏️" },
         { name: "衣柜", icon: "🚪" },
-        { name: "床头柜", icon: "🪑" },
+        { name: "床单", icon: "🛏️" },
+        { name: "挂画", icon: "🖼️" },
         { name: "台灯", icon: "💡" },
       ]
     }
     return [
-      { name: "床", icon: "🛏️" },
       { name: "衣柜", icon: "🚪" },
-      { name: "床头柜", icon: "🪑" },
+      { name: "床单", icon: "🛏️" },
+      { name: "挂画", icon: "🖼️" },
       { name: "台灯", icon: "💡" },
     ]
   }
@@ -384,6 +334,8 @@ export default function DesignPage() {
       const wardrobeProduct = wardrobeProducts.find(product => product.id === productId)
       const coffeeTableProduct = coffeeTableProducts.find(product => product.id === productId)
       const vaseProduct = vaseProducts.find(product => product.id === productId)
+      const bedSheetProduct = bedSheetProducts.find(product => product.id === productId)
+      const wallArtProduct = wallArtProducts.find(product => product.id === productId)
       
       // 根据产品名称确定产品类型，避免ID冲突
       let modifiedImage = null
@@ -395,6 +347,10 @@ export default function DesignPage() {
         modifiedImage = coffeeTableProduct?.modifiedImage
       } else if (productName.includes('花瓶')) {
         modifiedImage = vaseProduct?.modifiedImage
+      } else if (productName.includes('床单')) {
+        modifiedImage = bedSheetProduct?.modifiedImage
+      } else if (productName.includes('挂画')) {
+        modifiedImage = wallArtProduct?.modifiedImage
       }
       
       // 如果有修改后的图片，直接更新房间主图片
@@ -485,7 +441,8 @@ export default function DesignPage() {
     const furnitureMapping: { [key: string]: { room: string; type: string } } = {
       床: { room: "卧室", type: "床" },
       衣柜: { room: "卧室", type: "衣柜" },
-      床头柜: { room: "卧室", type: "储物" },
+      床单: { room: "卧室", type: "床单" },
+      挂画: { room: "卧室", type: "挂画" },
       台灯: { room: "卧室", type: "灯具" },
       沙发: { room: "客厅", type: "沙发" },
       茶几: { room: "客厅", type: "茶几" },
@@ -838,6 +795,114 @@ export default function DesignPage() {
                     <h3 className="text-sm font-medium mb-3">衣柜推荐</h3>
                     <div className="space-y-3">
                       {wardrobeProducts.map((product) => (
+                        <div key={product.id} className="bg-card rounded-lg overflow-hidden shadow-sm border">
+                          <img
+                            src={product.image || "/placeholder.svg"}
+                            alt={product.name}
+                            className="w-full h-24 object-cover"
+                          />
+                          <div className="p-2">
+                            <h4 className="text-xs font-medium mb-1">{product.name}</h4>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-semibold text-primary">{product.price}</span>
+                              <div className="flex items-center gap-1">
+                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                <span className="text-xs">{product.rating}</span>
+                                <span className="text-xs text-muted-foreground">({product.reviews})</span>
+                              </div>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs h-7 bg-transparent flex-shrink-0"
+                                onClick={() => handleAddToChat(product.name, product.image)}
+                              >
+                                添加到对话
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs h-7 bg-transparent flex-shrink-0"
+                                onClick={() => handleQuickReplace(product.id, product.name, product.image)}
+                              >
+                                🔄 一键更换
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="text-xs h-7 flex-shrink-0"
+                                onClick={() => handleAddToCart(product.id, product.name, product.price, product.image)}
+                              >
+                                <ShoppingCart className="h-3 w-3 mr-1" />
+                                加购物车
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedFurnitureType === "床单" && (
+                  <div className="pt-4 border-t">
+                    <h3 className="text-sm font-medium mb-3">床单推荐</h3>
+                    <div className="space-y-3">
+                      {bedSheetProducts.map((product) => (
+                        <div key={product.id} className="bg-card rounded-lg overflow-hidden shadow-sm border">
+                          <img
+                            src={product.image || "/placeholder.svg"}
+                            alt={product.name}
+                            className="w-full h-24 object-cover"
+                          />
+                          <div className="p-2">
+                            <h4 className="text-xs font-medium mb-1">{product.name}</h4>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-semibold text-primary">{product.price}</span>
+                              <div className="flex items-center gap-1">
+                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                <span className="text-xs">{product.rating}</span>
+                                <span className="text-xs text-muted-foreground">({product.reviews})</span>
+                              </div>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs h-7 bg-transparent flex-shrink-0"
+                                onClick={() => handleAddToChat(product.name, product.image)}
+                              >
+                                添加到对话
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs h-7 bg-transparent flex-shrink-0"
+                                onClick={() => handleQuickReplace(product.id, product.name, product.image)}
+                              >
+                                🔄 一键更换
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="text-xs h-7 flex-shrink-0"
+                                onClick={() => handleAddToCart(product.id, product.name, product.price, product.image)}
+                              >
+                                <ShoppingCart className="h-3 w-3 mr-1" />
+                                加购物车
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedFurnitureType === "挂画" && (
+                  <div className="pt-4 border-t">
+                    <h3 className="text-sm font-medium mb-3">挂画推荐</h3>
+                    <div className="space-y-3">
+                      {wallArtProducts.map((product) => (
                         <div key={product.id} className="bg-card rounded-lg overflow-hidden shadow-sm border">
                           <img
                             src={product.image || "/placeholder.svg"}

@@ -31,6 +31,10 @@ export default function PreviewPage() {
   // 渲染效果状态管理
   const [selectedTime, setSelectedTime] = useState<"day" | "night">("day")
   const [selectedSeason, setSelectedSeason] = useState<"spring" | "summer" | "autumn" | "winter">("spring")
+  
+  // 渲染状态管理
+  const [isRendering, setIsRendering] = useState(false)
+  const [renderedImage, setRenderedImage] = useState<string | null>(null)
 
   useEffect(() => {
     const storedImage = sessionStorage.getItem("previewImage")
@@ -68,6 +72,69 @@ export default function PreviewPage() {
     const timeText = selectedTime === "day" ? "白天" : "夜晚"
     const seasonText = selectedSeason === "spring" ? "春季" : selectedSeason === "summer" ? "夏季" : selectedSeason === "autumn" ? "秋季" : "冬季"
     return `${timeText} + ${seasonText}效果`
+  }
+
+  // 根据选择的效果组合获取对应的prompt
+  const getRenderingPrompt = () => {
+    const time = selectedTime
+    const season = selectedSeason
+    
+    const promptMap: { [key: string]: string } = {
+      "day-spring": "修改为春季晴朗白天光照：模拟上午 9-11 点 / 下午 2-4 点漫射光（角度 30-40°，无直射），整体明亮通透（不曝光），家具受光均匀、纹理清晰；阴影浅灰自然，补漫射光避免死黑；色调暖白柔和，还原 '春日暖阳包裹家具' 的舒适感。",
+      "day-summer": "修改为夏季晴朗正午光照：模拟 12-2 点直射 + 漫射混合光（角度近垂直，强炽热感），整体高亮锐利，金属 / 玻璃显清晰高光，布艺 / 木质纹理锐利；阴影对比强烈、边缘利落；色调热感暖黄，营造 '强光刺眼、明暗鲜明' 的炽热氛围。",
+      "day-autumn": "修改为秋季晴朗白天光照：模拟上午 10-12 点 / 下午 3-4 点侧射光（角度 45-60°，温和清透），整体暖柔衰减，家具纹理细腻，金属 / 玻璃反光柔和；阴影浅暖灰、边缘微糊（带秋意轻霭）；色调暖棕橙黄，还原 '阳光覆琥珀光晕' 的温润感。",
+      "day-winter": "修改为冬季晴朗白天光照：模拟上午 10-12 点冷漫射光（角度 30-45°，清冷感），整体明亮冷硬，家具显简洁锐利，金属 / 玻璃反光冷冽；阴影冷灰清晰（不带生硬）；色调冷白浅蓝，营造 '冷调光晕、家具素净' 的清透感。，但是不要过多改变图片整体的色调。",
+      "night-spring": "修改为春季夜晚光照：模拟室内暖光 + 窗外朦胧月光（分散柔和），整体低亮温馨（重点区稍亮、其余渐暗），家具柔和显温馨，金属 / 玻璃反光朦胧；阴影暖灰过渡（带静谧感）；色调暖黄浅粉，还原 '春夜暖光包裹家具' 的温柔氛围。",
+      "night-summer": "修改为夏季夜晚光照：模拟室内冷光 + 窗外霓虹微光（清凉活力），整体中亮偏冷（重点区清晰、其余带霓虹晕染），家具清爽显利落，金属 / 玻璃反光冷锐；阴影冷灰 + 暖光渐变（带都市感）；色调冷白浅紫，营造 '冷暖交织、现代活力' 的夏夜氛围。",
+      "night-autumn": "修改为秋季夜晚光照：模拟室内暖棕光 + 窗外清冷月光（柔和怀旧），整体低亮偏暖（重点区温馨、其余渐暗带秋意），家具温润显厚重，木质纹理 / 布艺柔软；阴影暖棕灰、边缘朦胧（像落叶堆积）；色调暖棕橙红，还原 '怀旧光晕、秋夜厚重' 的氛围。",
+      "night-winter": "修改为冬季夜晚光照：模拟室内冷白光 + 窗外冰蓝月光（锐利寒意），整体中亮冷硬（重点区清晰、其余带冷冽暗部），家具简洁素净，金属 / 玻璃反光冰感；阴影冷灰 + 冰蓝渐变（带严寒感）；色调冷白冰蓝，营造 '冷光素净、冬夜孤寂' 的清冽氛围。"
+    }
+    
+    const key = `${time}-${season}`
+    return promptMap[key] || "修改为选中的渲染效果"
+  }
+
+  // 开始渲染函数
+  const handleStartRendering = async () => {
+    if (!previewImage) {
+      console.log("[Preview] 没有预览图片，无法开始渲染")
+      return
+    }
+
+    setIsRendering(true)
+    console.log(`[Preview] 开始渲染，效果：${getCurrentEffectDescription()}`)
+    console.log(`[Preview] 使用prompt：${getRenderingPrompt()}`)
+
+    try {
+      const response = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt: getRenderingPrompt(),
+          image: previewImage,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`渲染请求失败: ${response.status}`)
+      }
+
+      const data = await response.json()
+      const generatedImageUrl = data.url
+
+      if (generatedImageUrl) {
+        setRenderedImage(generatedImageUrl)
+        console.log("[Preview] 渲染完成，图片URL:", generatedImageUrl)
+      } else {
+        console.log("[Preview] 渲染响应中没有图片URL")
+      }
+    } catch (error) {
+      console.log("[Preview] 渲染过程中发生错误:", error)
+    } finally {
+      setIsRendering(false)
+    }
   }
 
   const designOptions = [
@@ -213,6 +280,28 @@ export default function PreviewPage() {
                     </div>
                   </div>
 
+                  {/* 开始渲染按钮 */}
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      size="sm" 
+                      onClick={handleStartRendering}
+                      disabled={isRendering}
+                      className="flex items-center gap-2 bg-primary hover:bg-primary/90"
+                    >
+                      {isRendering ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          渲染中...
+                        </>
+                      ) : (
+                        <>
+                          <Edit className="h-4 w-4" />
+                          开始渲染
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
                   {/* 工具栏：旋转/缩放 */}
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" onClick={handleReset}>
@@ -233,7 +322,7 @@ export default function PreviewPage() {
               <CardContent>
                 <div className="relative bg-muted rounded-lg overflow-hidden">
                   <img
-                    src={previewImage || "/placeholder.svg"}
+                    src={renderedImage || previewImage || "/placeholder.svg"}
                     alt="3D渲染效果图"
                     className="w-full h-[500px] object-cover transition-transform duration-200"
                     style={{
@@ -245,9 +334,20 @@ export default function PreviewPage() {
                   {/* 效果叠加层 */}
                   <div className="absolute top-4 right-4">
                     <div className="bg-black/60 text-white px-3 py-1 rounded-lg text-sm">
-                      {getCurrentEffectDescription()}
+                      {renderedImage ? `渲染完成：${getCurrentEffectDescription()}` : getCurrentEffectDescription()}
                     </div>
                   </div>
+                  
+                  {/* 渲染状态指示器 */}
+                  {isRendering && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <div className="bg-white rounded-lg p-6 text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                        <div className="text-lg font-medium">渲染中...</div>
+                        <div className="text-sm text-muted-foreground">正在应用{getCurrentEffectDescription()}</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -34,14 +34,14 @@ export default function UploadPage() {
   const sampleFloorPlans = [
     {
       id: 1,
-      title: "极简温馨风卧室",
+      title: "极简风卧室",
       style: "温馨风",
-      image: "https://b.bdstatic.com/searchbox/image/gcp/20250823/3179002496.jpg",
-      description: "充满甜蜜气息的卧室设计，以暖白色、暖黄色为主",
+      image: "https://b.bdstatic.com/searchbox/image/gcp/20250823/806565301.png",
+      description: "充满简约的卧室设计，以木质色系为主为主",
     },
     {
       id: 2,
-      title: "北欧简约风客厅",
+      title: "北欧风客厅",
       style: "北欧风",
       image: "https://b.bdstatic.com/searchbox/image/gcp/20250823/3667326276.jpg",
       description: "简洁明亮的空间设计，以白色和浅灰色为主调，搭配原木元素增添温暖感",

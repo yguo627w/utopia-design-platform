@@ -129,20 +129,20 @@ export default function HomePage() {
 
   const styleCards = [
     {
-      name: "简约风",
+      name: "简约风客厅",
       image: "https://b.bdstatic.com/searchbox/image/gcp/20250823/3667326276.jpg",
     },
     {
-      name: "温馨风",
-      image: "https://b.bdstatic.com/searchbox/image/gcp/20250823/3179002496.jpg",
+      name: "温馨风卧室",
+      image: "https://b.bdstatic.com/searchbox/image/gcp/20250823/806565301.png",
     },
     {
-      name: "新中式",
+      name: "新中式花园",
       image: "https://b.bdstatic.com/searchbox/image/gcp/20250823/3939466376.jpg",
     },
     {
-      name: "轻奢风",
-      image: "https://design.gemcoder.com/staticResource/echoAiSystemImages/e92c83e291e5c683f509ebb453f71d93.png",
+      name: "轻奢风客厅",
+      image: "https://b.bdstatic.com/searchbox/image/gcp/20250823/2879010524.jpg",
     },
   ]
 

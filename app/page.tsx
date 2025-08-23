@@ -134,7 +134,7 @@ export default function HomePage() {
     },
     {
       name: "温馨风",
-      image: "https://b.bdstatic.com/searchbox/image/gcp/20250823/1345724659.webp",
+      image: "https://b.bdstatic.com/searchbox/image/gcp/20250823/3179002496.jpg",
     },
     {
       name: "新中式",

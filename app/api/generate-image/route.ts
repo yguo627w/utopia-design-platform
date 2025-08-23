@@ -62,13 +62,13 @@ export async function POST(request: NextRequest) {
         },
         body: JSON.stringify({
           model: "doubao-seededit-3-0-i2i-250628",
-          prompt: prompt,
+          prompt: "在其他家具不变的情况，请按照我的输入进行图片修改，修改指令如下：" + prompt,
           image: processedImage,
           response_format: "url",
           size: "adaptive",
-          seed: 21,
+          seed: 10,
           guidance_scale: 5.5,
-          watermark: true,
+          watermark: false,
         }),
       })
 
@@ -124,13 +124,13 @@ async function retryWithFallback(prompt: string, apiKey: string) {
     },
     body: JSON.stringify({
       model: "doubao-seededit-3-0-i2i-250628",
-      prompt: prompt,
+      prompt: "在其他家具不变的情况，请按照我的输入进行图片修改，修改指令如下：" + prompt,
       image: fallbackImage,
       response_format: "url",
       size: "adaptive",
-      seed: 21,
+      seed: 10,
       guidance_scale: 5.5,
-      watermark: true,
+      watermark: false,
     }),
   })
 

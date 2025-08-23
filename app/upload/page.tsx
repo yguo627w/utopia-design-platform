@@ -36,7 +36,7 @@ export default function UploadPage() {
       id: 1,
       title: "极简温馨风卧室",
       style: "温馨风",
-      image: "https://b.bdstatic.com/searchbox/image/gcp/20250823/1345724659.webp",
+      image: "https://b.bdstatic.com/searchbox/image/gcp/20250823/3179002496.jpg",
       description: "充满甜蜜气息的卧室设计，以暖白色、暖黄色为主",
     },
     {
@@ -189,7 +189,10 @@ export default function UploadPage() {
                       <p className="text-sm text-muted-foreground">推荐上传清晰的户型图或房间照片</p>
                     </div>
                     <div className="flex gap-4">
-                      <Button variant="outline" onClick={handleUploadAreaClick}>
+                      <Button variant="outline" onClick={(e) => {
+                        e.stopPropagation()
+                        handleUploadAreaClick()
+                      }}>
                         <Upload className="mr-2 h-4 w-4" />
                         选择文件
                       </Button>

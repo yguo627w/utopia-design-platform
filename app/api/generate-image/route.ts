@@ -49,9 +49,9 @@ export async function POST(request: NextRequest) {
         image: processedImage.substring(0, 100) + (processedImage.length > 100 ? "..." : ""),
         response_format: "url",
         size: "adaptive",
-        seed: 21,
+        seed: 10,
         guidance_scale: 5.5,
-        watermark: true,
+        watermark: false,
       })
 
       const response = await fetch("https://ark.cn-beijing.volces.com/api/v3/images/generations", {

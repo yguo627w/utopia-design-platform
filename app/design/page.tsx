@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import Navigation from "@/components/navigation"
 import StepIndicator from "@/components/step-indicator"
 import {
@@ -23,6 +24,9 @@ import {
   ChevronRight,
   ShoppingCart,
   Loader2,
+  Upload,
+  Sparkles,
+  CheckCircle,
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useCart } from "@/hooks/use-cart"
@@ -47,6 +51,16 @@ export default function DesignPage() {
   const [selectedStyleTitle, setSelectedStyleTitle] = useState("")
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState("")
+  
+  // 新增AI风格设计相关状态
+  const [showStyleDesignDialog, setShowStyleDesignDialog] = useState(false)
+  const [styleDesignLoading, setStyleDesignLoading] = useState(false)
+  const [styleUnderstandingLoading, setStyleUnderstandingLoading] = useState(false)
+  const [styleConfirmationDialog, setStyleConfirmationDialog] = useState(false)
+  const [styleKeywords, setStyleKeywords] = useState("")
+  const [referenceImage, setReferenceImage] = useState<string | null>(null)
+  const [customStyleSelected, setCustomStyleSelected] = useState(false)
+  
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       type: "ai",
@@ -693,6 +707,125 @@ export default function DesignPage() {
     setInputMessage(suggestion)
   }
 
+  // AI风格设计相关函数
+  const handleStyleDesignBannerClick = () => {
+    setShowStyleDesignDialog(true)
+  }
+
+  const handleReferenceImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (files && files[0]) {
+      const file = files[0]
+      
+      // 文件类型验证
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+      if (!validTypes.includes(file.type)) {
+        setToastMessage(`不支持的文件类型：${file.type}。请上传PNG、JPEG或WebP格式的图片。`)
+        setShowToast(true)
+        return
+      }
+
+      // 文件大小验证（10MB限制）
+      const maxSize = 10 * 1024 * 1024 // 10MB
+      if (file.size > maxSize) {
+        setToastMessage(`文件过大：${(file.size / 1024 / 1024).toFixed(1)}MB。请上传小于10MB的图片。`)
+        setShowToast(true)
+        return
+      }
+
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const imageUrl = e.target?.result as string
+        setReferenceImage(imageUrl)
+        setShowStyleDesignDialog(false)
+        
+        // 开始AI理解过程
+        handleStyleUnderstanding(imageUrl)
+      }
+      reader.onerror = () => {
+        setToastMessage(`读取文件失败：${file.name}`)
+        setShowToast(true)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleStyleUnderstanding = async (imageUrl: string) => {
+    setStyleUnderstandingLoading(true)
+    
+    try {
+      // 模拟AI理解过程（实际项目中这里应该调用真实的AI理解API）
+      await new Promise(resolve => setTimeout(resolve, 3000))
+      
+      // 模拟理解结果（实际项目中这里应该是AI返回的真实结果）
+      // 使用与弹窗显示一致的详细风格信息
+      const mockKeywords = "温馨复古风、主色调暖棕色家具，辅助米白色墙面，点缀墨绿色装饰"
+      setStyleKeywords(mockKeywords)
+      setStyleConfirmationDialog(true)
+    } catch (error) {
+      console.error("风格理解失败:", error)
+      setToastMessage("风格理解失败，请重试")
+      setShowToast(true)
+    } finally {
+      setStyleUnderstandingLoading(false)
+    }
+  }
+
+  const handleConfirmStyleDesign = async () => {
+    setStyleConfirmationDialog(false)
+    setStyleDesignLoading(true)
+    setCustomStyleSelected(true)
+    
+    try {
+      if (!referenceImage) {
+        throw new Error("没有参考图片")
+      }
+
+      // 调用豆包API进行风格设计
+      // 按照要求构造prompt：『在其他家具不变的情况，请按照我的输入进行图片修改，修改指令如下：把房间修改为+：${styleKeywords}』
+      const prompt = `在其他家具不变的情况，请按照我的输入进行图片修改，修改指令如下：把房间修改为+：${styleKeywords}`
+      
+      // 使用convertImageToUrl函数将当前房间图片转换为有效的URL
+      // 这样可以确保本地上传的图片能够被豆包API正确识别和处理
+      const targetImageUrl = await convertImageToUrl(roomImage)
+      
+      if (!targetImageUrl) {
+        throw new Error("无法获取有效的图片URL，请确保已上传房间图片")
+      }
+      
+      console.log("[AI风格设计] 转换后的图片URL:", targetImageUrl.substring(0, 100) + "...")
+      
+      // 同时传入转换后的图片URL和修改prompt
+      // 这样AI就能基于当前房间图片，按照指定风格进行重新设计
+      const generatedImageUrl = await callImageGenerationAPI(prompt, targetImageUrl)
+      
+      // 更新房间图片
+      setRoomImage(generatedImageUrl)
+      
+      // 添加AI消息到对话
+      const aiMessage: ChatMessage = {
+        type: "ai",
+        content: `根据您上传的参考图片，我为您生成了"${styleKeywords}"风格的设计方案：`,
+        avatar: "/woman-designer-avatar.png",
+        time: new Date().toLocaleTimeString("zh-CN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        image: generatedImageUrl,
+      }
+      setChatMessages((prev) => [...prev, aiMessage])
+      
+      setToastMessage("风格设计方案生成成功！")
+      setShowToast(true)
+    } catch (error) {
+      console.error("风格设计失败:", error)
+      setToastMessage("风格设计失败，请重试")
+      setShowToast(true)
+    } finally {
+      setStyleDesignLoading(false)
+    }
+  }
+
   const handleRenderEffect = () => {
     // Store current room image for preview page
     sessionStorage.setItem("previewImage", roomImage)
@@ -742,6 +875,34 @@ export default function DesignPage() {
             </TabsList>
 
             <TabsContent value="inspiration" className="p-4 space-y-3 flex-1 overflow-y-auto">
+              {/* AI风格设计Banner */}
+              <div 
+                className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-4 cursor-pointer hover:from-primary/20 hover:to-primary/10 transition-all duration-200"
+                onClick={handleStyleDesignBannerClick}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="bg-primary/20 rounded-full p-2">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-sm text-primary mb-1">没有喜欢的风格？</h3>
+                    <p className="text-xs text-muted-foreground">上传参考图AI帮你设计</p>
+                  </div>
+                  <Upload className="h-4 w-4 text-primary" />
+                </div>
+              </div>
+
+              {/* 自定义设计风格（选中态） */}
+              {customStyleSelected && (
+                <div className="bg-primary/10 border border-primary/30 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle className="h-4 w-4 text-primary" />
+                    <span className="font-semibold text-sm text-primary">自定义设计风格</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{styleKeywords}</p>
+                </div>
+              )}
+
               {designStyles.map((style, index) => (
                 <div
                   key={index}
@@ -993,6 +1154,32 @@ export default function DesignPage() {
                     </div>
                   </div>
                 )}
+
+                {/* AI风格设计loading效果 */}
+                {styleDesignLoading && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
+                    <div className="bg-white rounded-lg p-6 flex flex-col items-center gap-4">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      <div className="text-center">
+                        <p className="text-lg font-semibold text-gray-900">AI智能设计中…</p>
+                        <p className="text-sm text-gray-600 mt-1">正在为您生成设计方案，请稍后</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* AI风格理解loading效果 */}
+                {styleUnderstandingLoading && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
+                    <div className="bg-white rounded-lg p-6 flex flex-col items-center gap-4">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      <div className="text-center">
+                        <p className="text-lg font-semibold text-gray-900">AI智能理解中…</p>
+                        <p className="text-sm text-gray-600 mt-1">正在为您生成设计方案，请稍候</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 <img
                   src={roomImage || "/placeholder.svg"}
@@ -1132,6 +1319,76 @@ export default function DesignPage() {
           </div>
         </div>
       </div>
+
+      {/* AI风格设计上传对话框 */}
+      <Dialog open={showStyleDesignDialog} onOpenChange={setShowStyleDesignDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              AI风格设计
+            </DialogTitle>
+            <DialogDescription>
+              上传您喜欢的家装风格参考图片，AI将为您生成个性化的设计方案
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="relative">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleReferenceImageUpload}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              />
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground mb-2">点击上传参考图片</p>
+                <p className="text-xs text-muted-foreground">支持 PNG、JPEG、WebP 格式，最大 10MB</p>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 风格确认对话框 */}
+      <Dialog open={styleConfirmationDialog} onOpenChange={setStyleConfirmationDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-primary" />
+              风格理解确认
+            </DialogTitle>
+            <DialogDescription>
+              已经根据你上传的图片，理解家装风格关键词如下所示，请确认是否依据此风格进行设计
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-muted/50 rounded-lg p-4">
+              <p className="text-sm font-medium text-primary mb-3">识别到的风格信息：</p>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p><span className="font-medium">温馨复古风、主色调暖棕色家具，辅助米白色墙面，点缀墨绿色装饰</span></p>
+              </div>
+            </div>
+            {referenceImage && (
+              <div className="rounded-lg overflow-hidden border">
+                <img
+                  src={referenceImage}
+                  alt="参考图片"
+                  className="w-full h-48 object-cover"
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStyleConfirmationDialog(false)}>
+              取消
+            </Button>
+            <Button onClick={handleConfirmStyleDesign}>
+              确认设计
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

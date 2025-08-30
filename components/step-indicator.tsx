@@ -9,7 +9,7 @@ interface StepIndicatorProps {
 }
 
 const steps = [
-  { number: 1, name: "上传户型图", path: "/upload" },
+      { number: 1, name: "上传房间照片", path: "/upload" },
   { number: 2, name: "设计工作台", path: "/design" },
   { number: 3, name: "预览渲染", path: "/preview" },
   { number: 4, name: "商城购买", path: "/marketplace" },

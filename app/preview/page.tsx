@@ -457,7 +457,7 @@ export default function PreviewPage() {
                 <div>
                   <h4 className="font-medium mb-2">空间信息</h4>
                   <div className="text-sm space-y-1">
-                    <p>户型：两居室</p>
+                    <p>房间类型：卧室</p>
                     <p>面积：75㎡</p>
                     <p>朝向：南北通透</p>
                   </div>

@@ -28,86 +28,86 @@ export default function MarketplacePage() {
       id: 1001,
       name: "北欧风三人布艺沙发",
       brand: "简约现代家具",
-      price: 2399,
-      originalPrice: 2999,
+      price: 239,
+      originalPrice: 299,
       image: "/nordic-fabric-sofa.png",
       rating: 4.8,
       reviews: 128,
       tags: ["限时特惠"],
       discount: "限时特惠",
-      channel: "淘宝",
+      channel: "1688",
     },
     {
       id: 1002,
       name: "现代简约茶几",
       brand: "客厅专家",
-      price: 899,
-      originalPrice: 1299,
+      price: 89,
+      originalPrice: 129,
       image: "/wooden-coffee-table.png",
       rating: 4.6,
       reviews: 86,
       tags: ["新品"],
       discount: "免运费",
-      channel: "京东",
+      channel: "淘宝",
     },
     {
       id: 1003,
       name: "轻奢风落地灯",
       brand: "客厅灯具专家",
-      price: 599,
-      originalPrice: 799,
+      price: 59,
+      originalPrice: 79,
       image: "/modern-floor-lamp.png",
       rating: 4.7,
       reviews: 215,
       tags: ["以旧换新"],
       discount: "以旧换新",
-      channel: "宜家",
+      channel: "咸鱼",
     },
     {
       id: 1004,
       name: "新中式实木餐桌组合",
       brand: "家用小户型4人6人饭桌子",
-      price: 3599,
-      originalPrice: 4299,
+      price: 359,
+      originalPrice: 429,
       image: "/chinese-dining-table-set.png",
       rating: 4.5,
       reviews: 76,
       tags: ["热销"],
       discount: "免运费",
-      channel: "淘宝",
+      channel: "小红书",
     },
     {
       id: 1005,
       name: "工业风多层书架",
       brand: "客厅书房置物架展示架",
-      price: 1299,
-      originalPrice: 1599,
+      price: 129,
+      originalPrice: 159,
       image: "/placeholder-vyzr9.png",
       rating: 4.4,
       reviews: 156,
       tags: ["热销"],
       discount: "限时特惠",
-      channel: "京东",
+      channel: "1688",
     },
     {
       id: 1006,
       name: "现代简约双人床架",
       brand: "1.8米主卧软包靠背床",
-      price: 3899,
-      originalPrice: 4599,
+      price: 389,
+      originalPrice: 459,
       image: "/modern-bed-frame.png",
       rating: 4.6,
       reviews: 98,
       tags: ["以旧换新"],
       discount: "以旧换新",
-      channel: "宜家",
+      channel: "淘宝",
     },
   ]
 
   const filters = {
-    priceRanges: ["¥0-500", "¥500-1000", "¥1000-3000", "¥3000+"],
+    priceRanges: ["¥0-100", "¥100-300", "¥300-500", "¥500+"],
     styles: ["北欧风", "现代简约", "轻奢", "新中式", "工业风"],
-    brands: ["宜家", "MUJI", "造作", "梵几"],
+    furnitureTypes: ["家具", "装饰", "软装", "收纳"],
     promotions: ["以旧换新", "满减优惠", "新品特惠"],
   }
 
@@ -184,15 +184,15 @@ export default function MarketplacePage() {
                   </div>
                 </div>
 
-                {/* Brand */}
+                {/* Furniture Type */}
                 <div>
-                  <h4 className="font-medium mb-3">品牌</h4>
+                  <h4 className="font-medium mb-3">家具类型</h4>
                   <div className="space-y-2">
-                    {filters.brands.map((brand) => (
-                      <div key={brand} className="flex items-center space-x-2">
-                        <Checkbox id={brand} />
-                        <label htmlFor={brand} className="text-sm cursor-pointer">
-                          {brand}
+                    {filters.furnitureTypes.map((type) => (
+                      <div key={type} className="flex items-center space-x-2">
+                        <Checkbox id={type} />
+                        <label htmlFor={type} className="text-sm cursor-pointer">
+                          {type}
                         </label>
                       </div>
                     ))}
@@ -225,7 +225,7 @@ export default function MarketplacePage() {
             <div className="flex gap-4 mb-6">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="搜索家具、装饰或品牌..." className="pl-10" />
+                <Input placeholder="搜索家具、装饰或软装..." className="pl-10" />
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">排序方式：</span>
@@ -266,9 +266,10 @@ export default function MarketplacePage() {
                       <Badge 
                         variant="secondary" 
                         className={`text-white border-0 text-xs px-2 py-1 ${
-                          product.channel === "淘宝" ? "bg-orange-500" :
-                          product.channel === "京东" ? "bg-red-500" :
-                          product.channel === "宜家" ? "bg-blue-500" :
+                          product.channel === "1688" ? "bg-orange-500" :
+                          product.channel === "淘宝" ? "bg-red-500" :
+                          product.channel === "咸鱼" ? "bg-green-500" :
+                          product.channel === "小红书" ? "bg-pink-500" :
                           "bg-gray-500"
                         }`}
                       >

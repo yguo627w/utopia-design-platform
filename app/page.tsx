@@ -64,7 +64,7 @@ export default function HomePage() {
       name: "郭宇华",
       role: "租房用户",
       content:
-        "租的房子不想花太多钱装修，但又想住得舒服。用这个AI设计工具，花了不到2000块就把出租屋改造得焕然一新，朋友们都惊呆了！",
+        "租的房子不想花太多钱装修，但又想住得舒服。用这个AI设计工具，花了不到500块就把出租屋改造得焕然一新，朋友们都惊呆了！",
       rating: 5,
       avatar: "https://b.bdstatic.com/searchbox/image/gcp/20250822/4220875564.png",
     },
@@ -78,8 +78,8 @@ export default function HomePage() {
     },
     {
       name: "徐大淋",
-      role: "新房业主",
-      content: "'我的乌托邦'的实景渲染能力太强了，第一次看到我的房子搭配我想新买的灯具在不同场景和光照下的神奇效果",
+      role: "租房达人",
+      content: "'我的乌托邦'的实景渲染能力太强了，第一次看到我的房间搭配我想新买的灯具在不同场景和光照下的神奇效果",
       rating: 5,
       avatar: "https://b.bdstatic.com/searchbox/image/gcp/20250822/1517810536.png",
     },
@@ -106,26 +106,7 @@ export default function HomePage() {
     },
   ]
 
-  const buyerCases = [
-    {
-      title: "新中式之家",
-      before: "/buyer-chinese-before.png",
-      after: "/buyer-chinese-after.png",
-      description: "户型图到实景装修",
-    },
-    {
-      title: "现代风设计",
-      before: "/buyer-modern-before.png",
-      after: "/buyer-modern-after.png",
-      description: "简约现代三居室",
-    },
-    {
-      title: "DIY温馨小屋",
-      before: "/buyer-cozy-before.png",
-      after: "/buyer-cozy-after.png",
-      description: "亲手打造理想家园",
-    },
-  ]
+
 
   const styleCards = [
     {
@@ -167,7 +148,7 @@ export default function HomePage() {
               </h1>
               <p className="text-2xl text-primary font-medium mb-6">你的家，你定义！</p>
               <p className="text-lg text-muted-foreground mb-10 max-w-lg leading-relaxed">
-                只需上传房间照片或户型图，用自然语言描述改造需求，AI即可生成个性化设计方案，让每个空间成为自我的延伸
+                只需上传房间照片，用自然语言描述改造需求，AI即可生成个性化设计方案，让每个空间成为自我的延伸
               </p>
               <div className="flex flex-col sm:flex-row gap-6">
                 <Button size="lg" asChild className="text-xl px-16 py-8 font-semibold shadow-xl hover-lift">
@@ -293,7 +274,6 @@ export default function HomePage() {
           {/* Renter Cases */}
           <div className="mb-16">
             <div className="text-center mb-8">
-              <Badge className="text-lg px-6 py-2 mb-4">租房党</Badge>
               <h3 className="text-2xl font-bold text-primary">房子是租来的，但生活不是</h3>
             </div>
             <div className="grid md:grid-cols-3 gap-8">
@@ -332,47 +312,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Buyer Cases */}
-          <div className="mb-8">
-            <div className="text-center mb-8">
-              <Badge className="text-lg px-6 py-2 mb-4">买房党</Badge>
-              <h3 className="text-2xl font-bold text-primary">动手DIY的家，点滴凝聚温暖</h3>
-            </div>
-            <div className="grid md:grid-cols-3 gap-8">
-              {buyerCases.map((caseItem, index) => (
-                <Card key={index} className="overflow-hidden hover-lift">
-                  <CardContent className="p-0">
-                    <div className="grid grid-cols-2">
-                      <div className="relative">
-                        <img
-                          src={caseItem.before || "/placeholder.svg"}
-                          alt="户型图"
-                          className="w-full h-32 object-cover"
-                        />
-                        <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                          户型图
-                        </div>
-                      </div>
-                      <div className="relative">
-                        <img
-                          src={caseItem.after || "/placeholder.svg"}
-                          alt="实景图"
-                          className="w-full h-32 object-cover"
-                        />
-                        <div className="absolute bottom-2 right-2 bg-primary/90 text-white text-xs px-2 py-1 rounded">
-                          实景图
-                        </div>
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      <h4 className="font-semibold mb-1">{caseItem.title}</h4>
-                      <p className="text-sm text-muted-foreground">{caseItem.description}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
+
 
           <div className="text-center">
             <Button size="lg" variant="outline" asChild className="px-12 bg-transparent">
@@ -421,7 +361,7 @@ export default function HomePage() {
             <Card className="border-2 border-dashed border-primary/30 bg-white/50 backdrop-blur-sm hover-lift">
               <CardContent className="p-12 text-center">
                 <Upload className="h-16 w-16 text-primary mx-auto mb-6" />
-                <h3 className="text-2xl font-semibold mb-4">上传户型图开始设计</h3>
+                <h3 className="text-2xl font-semibold mb-4">上传房间照片开始设计</h3>
                 <p className="text-muted-foreground mb-8">支持JPG、PNG格式，文件大小不超过10MB</p>
                 <Button size="lg" asChild className="px-12">
                   <Link href="/upload#upload">上传图片开始设计</Link>

@@ -144,13 +144,13 @@ export default function UploadPage() {
         <div className="max-w-4xl mx-auto">
           {/* Step Indicator */}
           <div className="text-center mb-4">
-            <div className="text-sm text-muted-foreground">步骤 1/4: 上传户型图</div>
+            <div className="text-sm text-muted-foreground">步骤 1/4: 上传房间照片</div>
           </div>
 
           {/* Title Section */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold mb-4">上传你的实景照片或户型图片片或户型图片</h1>
-            <p className="text-xl text-muted-foreground">支持户型图、实景照片，AI将为你生成3D模型</p>
+            <h1 className="text-4xl font-bold mb-4">上传你的房间照片</h1>
+            <p className="text-xl text-muted-foreground">支持房间实景照片，AI将为你生成个性化设计方案</p>
           </div>
 
           {/* Upload Section */}
@@ -186,7 +186,7 @@ export default function UploadPage() {
                     </div>
                     <div>
                       <p className="text-lg font-medium mb-2">拖拽文件到此处，或点击选择文件</p>
-                      <p className="text-sm text-muted-foreground">推荐上传清晰的户型图或房间照片</p>
+                      <p className="text-sm text-muted-foreground">推荐上传清晰的房间照片</p>
                     </div>
                     <div className="flex gap-4">
                       <Button variant="outline" onClick={(e) => {
@@ -241,19 +241,19 @@ export default function UploadPage() {
             <CardContent>
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <h4 className="font-medium mb-2">户型图要求：</h4>
-                  <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>• 图片清晰，标注尺寸更佳</li>
-                    <li>• 包含房间布局和门窗位置</li>
-                    <li>• 建议使用开发商提供的标准户型图</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium mb-2">实景照片要求：</h4>
+                  <h4 className="font-medium mb-2">房间照片要求：</h4>
                   <ul className="text-sm text-muted-foreground space-y-1">
                     <li>• 光线充足，避免过暗或过亮</li>
                     <li>• 尽量拍摄房间全景</li>
                     <li>• 多角度拍摄效果更好</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2">拍摄技巧：</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• 保持房间整洁，移除杂物</li>
+                    <li>• 确保照片清晰，避免模糊</li>
+                    <li>• 包含主要家具和装饰元素</li>
                   </ul>
                 </div>
               </div>

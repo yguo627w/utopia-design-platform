@@ -31,7 +31,7 @@ export default function CommunityPage() {
     },
     {
       id: 8,
-      title: "1500元改造出租屋客厅，从破旧到温馨的蜕变",
+      title: "500元改造出租屋客厅，从破旧到温馨的蜕变",
       author: "郭宇华",
       avatar: "https://b.bdstatic.com/searchbox/image/gcp/20250822/4220875564.png",
       image: "https://design.gemcoder.com/staticResource/echoAiSystemImages/74f8802894c5430f9427cacce3e582f3.png",

@@ -108,7 +108,7 @@ export default function DesignPage() {
     {
       type: "ai",
       content:
-        "你好！我是你的AI设计助手，请上传户型图或描述装修需求，例如'温馨北欧风客厅'，我会为你生成个性化设计方案。",
+        "你好！我是你的AI设计助手，请上传房间照片或描述装修需求，例如'温馨北欧风客厅'，我会为你生成个性化设计方案。",
       avatar: "/woman-designer-avatar.png",
       time: "09:30",
     },
@@ -317,7 +317,7 @@ export default function DesignPage() {
       name: "现代简约衣柜",
       image: "https://malexa.bj.bcebos.com/Utopia/%E8%A1%A3%E6%9F%9C.jpg",
       modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E8%A1%A3%E6%9F%9C%E4%BF%AE%E6%94%B91.jpg",
-      price: "¥2,899",
+      price: "¥299",
       rating: 4.8,
       reviews: 128,
     }
@@ -329,7 +329,7 @@ export default function DesignPage() {
       name: "条纹三人沙发",
       image: "https://malexa.bj.bcebos.com/Utopia/%E6%B2%99%E5%8F%911.jpg",
       modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E6%B2%99%E5%8F%91%E4%BF%AE%E6%94%B91.jpg",
-      price: "¥4,299",
+      price: "¥429",
       rating: 4.8,
       reviews: 156,
     },
@@ -338,7 +338,7 @@ export default function DesignPage() {
       name: "现代布艺沙发",
       image: "https://malexa.bj.bcebos.com/Utopia/%E6%B2%99%E5%8F%912.jpg",
       modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E6%B2%99%E5%8F%91%E4%BF%AE%E6%94%B92.png",
-      price: "¥3,899",
+      price: "¥389",
       rating: 4.7,
       reviews: 203,
     },
@@ -347,7 +347,7 @@ export default function DesignPage() {
       name: "北欧风沙发",
       image: "https://malexa.bj.bcebos.com/Utopia/%E6%B2%99%E5%8F%913.jpg",
       modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E6%B2%99%E5%8F%91%E4%BF%AE%E6%94%B93.png",
-      price: "¥5,199",
+      price: "¥519",
       rating: 4.9,
       reviews: 128,
     }
@@ -359,7 +359,7 @@ export default function DesignPage() {
       name: "现代简约茶几",
       image: "https://malexa.bj.bcebos.com/Utopia/%E8%8C%B6%E5%87%A01.jpg",
       modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E8%8C%B6%E5%87%A0%E4%BF%AE%E6%94%B91.jpg",
-      price: "¥1,899",
+      price: "¥189",
       rating: 4.8,
       reviews: 89,
     },
@@ -368,7 +368,7 @@ export default function DesignPage() {
       name: "北欧风茶几",
       image: "https://malexa.bj.bcebos.com/Utopia/%E8%8C%B6%E5%87%A02.jpg",
       modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E8%8C%B6%E5%87%A0%E4%BF%AE%E6%94%B92.jpg",
-      price: "¥2,299",
+      price: "¥229",
       rating: 4.7,
       reviews: 156,
     },
@@ -377,7 +377,7 @@ export default function DesignPage() {
       name: "轻奢风茶几",
       image: "https://malexa.bj.bcebos.com/Utopia/%E8%8C%B6%E5%87%A03.jpg",
       modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E8%8C%B6%E5%87%A0%E4%BF%AE%E6%94%B93.jpg",
-      price: "¥3,199",
+      price: "¥319",
       rating: 4.9,
       reviews: 112,
     }
@@ -389,7 +389,7 @@ export default function DesignPage() {
       name: "现代简约花瓶",
       image: "https://malexa.bj.bcebos.com/Utopia/%E8%8A%B1%E7%93%B62.jpg",
       modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E8%8A%B1%E7%93%B6%E4%BF%AE%E6%94%B92.jpg",
-      price: "¥299",
+      price: "¥99",
       rating: 4.8,
       reviews: 89,
     },
@@ -398,7 +398,7 @@ export default function DesignPage() {
       name: "北欧风花瓶",
       image: "https://malexa.bj.bcebos.com/Utopia/%E8%8A%B1%E7%93%B63.jpg",
       modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E8%8A%B1%E7%93%B6%E4%BF%AE%E6%94%B93.jpg",
-      price: "¥399",
+      price: "¥129",
       rating: 4.7,
       reviews: 156,
     },
@@ -407,7 +407,7 @@ export default function DesignPage() {
       name: "轻奢风花瓶",
       image: "https://malexa.bj.bcebos.com/Utopia/%E8%8A%B1%E7%93%B64.jpg",
       modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E8%8A%B1%E7%93%B6%E4%BF%AE%E6%94%B94.jpg",
-      price: "¥599",
+      price: "¥159",
       rating: 4.9,
       reviews: 112,
     }
@@ -420,7 +420,7 @@ export default function DesignPage() {
       name: "现代简约床单",
       image: "https://malexa.bj.bcebos.com/Utopia/%E5%BA%8A%E5%8D%951.jpg",
       modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E5%BA%8A%E5%8D%95%E4%BF%AE%E6%94%B91.jpg",
-      price: "¥299",
+      price: "¥89",
       rating: 4.8,
       reviews: 89,
     }
@@ -432,7 +432,7 @@ export default function DesignPage() {
       name: "现代简约挂画",
       image: "https://malexa.bj.bcebos.com/Utopia/%E6%8C%82%E7%94%BB1.jpg",
       modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E6%8C%82%E7%94%BB%E4%BF%AE%E6%94%B91.jpg",
-      price: "¥299",
+      price: "¥79",
       rating: 4.8,
       reviews: 89,
     },
@@ -738,7 +738,7 @@ export default function DesignPage() {
       const imageUrl = await convertImageToUrl(roomImage)
 
       if (!imageUrl) {
-        throw new Error("无法获取有效的图片URL。请确保：\n• 已上传房间照片或户型图\n• 图片格式为PNG、JPEG、JPG或WebP\n• 图片大小不超过10MB")
+        throw new Error("无法获取有效的图片URL。请确保：\n• 已上传房间照片\n• 图片格式为PNG、JPEG、JPG或WebP\n• 图片大小不超过10MB")
       }
 
       console.log("[v0] Sending API request with:", {
@@ -1351,7 +1351,7 @@ export default function DesignPage() {
               <div className="space-y-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="搜索家具、材质或品牌..." className="pl-10" />
+                  <Input placeholder="搜索家具、材质或平台..." className="pl-10" />
                 </div>
 
                 <div>
@@ -1486,9 +1486,9 @@ export default function DesignPage() {
                 )}
 
                 <div className="pt-4 border-t">
-                  <h3 className="text-sm font-medium mb-2">热门品牌推荐</h3>
+                  <h3 className="text-sm font-medium mb-2">热门平台推荐</h3>
                   <div className="grid grid-cols-3 gap-2">
-                    {["宜家", "MUJI", "HAY", "造作", "梵几", "吱音"].map((brand) => (
+                    {["1688", "淘宝", "咸鱼", "小红书", "拼多多", "闲鱼"].map((brand) => (
                       <Button key={brand} variant="outline" size="sm" className="text-xs bg-transparent">
                         {brand}
                       </Button>

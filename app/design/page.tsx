@@ -73,7 +73,7 @@ interface FamilyMember {
 }
 
 export default function DesignPage() {
-  const [selectedRoom, setSelectedRoom] = useState("卧室")
+  const [selectedRoom, setSelectedRoom] = useState("客厅")
   const [selectedFurnitureType, setSelectedFurnitureType] = useState("")
   const [zoomLevel, setZoomLevel] = useState(1)
   const [chatImages, setChatImages] = useState<Array<{ id: string; url: string; name: string }>>([])
@@ -703,8 +703,8 @@ export default function DesignPage() {
       await new Promise(resolve => setTimeout(resolve, 3000))
       
       // 模拟识别结果（实际项目中这里应该是AI返回的真实结果）
-      // 80%概率识别成功，20%概率识别失败
-      const isSuccess = Math.random() > 0.2
+      // 默认识别成功，显示花瓶识别结果
+      const isSuccess = true // 改为true，确保每次都识别成功
       
       if (isSuccess) {
         // 识别成功

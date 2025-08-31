@@ -22,7 +22,7 @@ export const useCart = () => {
         {
           id: 1001,
           name: "北欧风三人布艺沙发",
-          price: 2399,
+          price: 239,
           image: "/nordic-fabric-sofa.png",
           quantity: 1,
           source: "marketplace",

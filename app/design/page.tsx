@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Navigation from "@/components/navigation"
 import StepIndicator from "@/components/step-indicator"
 import {
@@ -92,6 +93,26 @@ export default function DesignPage() {
   const [styleKeywords, setStyleKeywords] = useState("")
   const [referenceImage, setReferenceImage] = useState<string | null>(null)
   const [customStyleSelected, setCustomStyleSelected] = useState(false)
+  
+  // 新增自定义家具上传相关状态
+  const [showFurnitureUploadDialog, setShowFurnitureUploadDialog] = useState(false)
+  const [furnitureRecognitionLoading, setFurnitureRecognitionLoading] = useState(false)
+  const [furnitureRecognitionDialog, setFurnitureRecognitionDialog] = useState(false)
+  const [furnitureRecognitionResult, setFurnitureRecognitionResult] = useState<{
+    success: boolean
+    furnitureType?: string
+    similarProducts?: Array<{ id: string; name: string; image: string; price: string }>
+    originalImage: string
+  } | null>(null)
+  const [showCustomFurnitureForm, setShowCustomFurnitureForm] = useState(false)
+  const [customFurnitureData, setCustomFurnitureData] = useState({
+    name: "",
+    scene: "",
+    type: ""
+  })
+  
+  // 新增：选中的相似家具状态
+  const [selectedSimilarFurniture, setSelectedSimilarFurniture] = useState<string[]>([])
   
   // 新增风格设计页面状态
   const [showStyleDetail, setShowStyleDetail] = useState(false)
@@ -294,21 +315,51 @@ export default function DesignPage() {
   ]
 
   const getFurnitureTypes = () => {
-    if (selectedRoom === "卧室") {
-      return [
-        { name: "衣柜", count: "3个产品", icon: "🚪" },
-        { name: "床单", count: "3个产品", icon: "🛏️" },
-        { name: "挂画", count: "3个产品", icon: "🖼️" },
-      ]
+    switch (selectedRoom) {
+      case "卧室":
+        return [
+          { name: "床", icon: "🛏️", count: "12件" },
+          { name: "床头柜", icon: "🪑", count: "8件" },
+          { name: "床单", icon: "🛌", count: "15件" },
+          { name: "衣柜", icon: "🚪", count: "20件" },
+          { name: "装饰品", icon: "🎨", count: "25件" },
+          { name: "收纳储物", icon: "📦", count: "18件" },
+          { name: "地毯", icon: "🟫", count: "10件" },
+        ]
+      case "客厅":
+        return [
+          { name: "沙发", icon: "🛋️", count: "15件" },
+          { name: "茶几", icon: "🪑", count: "12件" },
+          { name: "花瓶", icon: "🏺", count: "8件" },
+          { name: "柜子", icon: "🗄️", count: "22件" },
+          { name: "灯具", icon: "💡", count: "18件" },
+          { name: "地毯", icon: "🟫", count: "12件" },
+          { name: "收纳储物", icon: "📦", count: "16件" },
+          { name: "装饰品", icon: "🎨", count: "30件" },
+        ]
+      case "餐厅":
+        return [
+          { name: "餐桌椅", icon: "🪑", count: "10件" },
+          { name: "餐具", icon: "🍽️", count: "25件" },
+          { name: "装饰品", icon: "🎨", count: "15件" },
+        ]
+      case "卫浴":
+        return [
+          { name: "浴室家具", icon: "🚿", count: "8件" },
+          { name: "收纳储物", icon: "📦", count: "12件" },
+          { name: "装饰品", icon: "🎨", count: "10件" },
+        ]
+      default: // 默认返回卧室分类
+        return [
+          { name: "床", icon: "🛏️", count: "12件" },
+          { name: "床头柜", icon: "🪑", count: "8件" },
+          { name: "床单", icon: "🛌", count: "15件" },
+          { name: "衣柜", icon: "🚪", count: "20件" },
+          { name: "装饰品", icon: "🎨", count: "25件" },
+          { name: "收纳储物", icon: "📦", count: "18件" },
+          { name: "地毯", icon: "🟫", count: "10件" },
+        ]
     }
-    return [
-      { name: "沙发", count: "3个产品", icon: "🛋️" },
-      { name: "茶几", count: "3个产品", icon: "🪑" },
-      { name: "花瓶", count: "3个产品", icon: "🏺" },
-      // { name: "储物柜", count: "9个产品", icon: "🗄️" },
-      // { name: "灯具灯饰", count: "11个产品", icon: "💡" },
-      // { name: "装饰品", count: "14个产品", icon: "🎨" },
-    ]
   }
 
   const wardrobeProducts = [
@@ -413,6 +464,28 @@ export default function DesignPage() {
     }
   ]
 
+  // 床头柜产品数据
+  const bedsideTableProducts = [
+    {
+      id: 801,
+      name: "现代简约床头柜",
+      image: "https://b.bdstatic.com/searchbox/image/gcp/20250831/2098327712.webp",
+      modifiedImage: "https://b.bdstatic.com/searchbox/image/gcp/20250831/2098327712.webp",
+      price: "¥199",
+      rating: 4.8,
+      reviews: 89,
+    },
+    {
+      id: 802,
+      name: "北欧风床头柜",
+      image: "https://b.bdstatic.com/searchbox/image/gcp/20250831/944772707.webp",
+      modifiedImage: "https://b.bdstatic.com/searchbox/image/gcp/20250831/944772707.webp",
+      price: "¥159",
+      rating: 4.7,
+      reviews: 67,
+    }
+  ]
+
   // 卧室家具产品数据
   const bedSheetProducts = [
     {
@@ -439,6 +512,16 @@ export default function DesignPage() {
   ]
 
   const getKeyFurniture = () => {
+    // 如果用户上传了本地图片，显示默认的关键家具
+    if (roomImage && roomImage !== "/placeholder.svg") {
+      return [
+        { name: "沙发", icon: "🛋️" },
+        { name: "茶几", icon: "🪑" },
+        { name: "花瓶", icon: "🏺" },
+        { name: "灯具", icon: "💡" },
+      ]
+    }
+    
     if (selectedStyleTitle === "北欧风客厅") {
       return [
         { name: "沙发", icon: "🛋️" },
@@ -451,19 +534,21 @@ export default function DesignPage() {
       return [
         { name: "衣柜", icon: "🚪" },
         { name: "床单", icon: "🛏️" },
-        { name: "挂画", icon: "🖼️" },
+        { name: "装饰品", icon: "🎨" },
         { name: "台灯", icon: "💡" },
       ]
     }
     return [
       { name: "衣柜", icon: "🚪" },
       { name: "床单", icon: "🛏️" },
-      { name: "挂画", icon: "🖼️" },
+      { name: "装饰品", icon: "🎨" },
       { name: "台灯", icon: "💡" },
     ]
   }
 
-
+  // 家具场景和类型选项
+  const furnitureScenes = ["卧室", "客厅", "餐厅", "浴室"]
+  const furnitureTypes = ["床", "沙发", "柜子", "椅子", "桌子", "灯具", "装饰", "收纳", "其他"]
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
@@ -533,6 +618,7 @@ export default function DesignPage() {
       const vaseProduct = vaseProducts.find(product => product.id === productId)
       const bedSheetProduct = bedSheetProducts.find(product => product.id === productId)
       const wallArtProduct = wallArtProducts.find(product => product.id === productId)
+      const bedsideTableProduct = bedsideTableProducts.find(product => product.id === productId)
       
       // 根据产品名称确定产品类型，避免ID冲突
       let modifiedImage = null
@@ -546,7 +632,9 @@ export default function DesignPage() {
         modifiedImage = vaseProduct?.modifiedImage
       } else if (productName.includes('床单')) {
         modifiedImage = bedSheetProduct?.modifiedImage
-      } else if (productName.includes('挂画')) {
+      } else if (productName.includes('床头柜')) {
+        modifiedImage = bedsideTableProduct?.modifiedImage
+      } else if (productName.includes('装饰品') || productName.includes('挂画')) {
         modifiedImage = wallArtProduct?.modifiedImage
       }
       
@@ -562,6 +650,152 @@ export default function DesignPage() {
         setShowToast(true)
         setQuickReplaceLoading(false)
       }, 3000)
+    }
+  }
+
+  // 自定义家具上传相关处理函数
+  const handleFurnitureUploadBannerClick = () => {
+    setShowFurnitureUploadDialog(true)
+  }
+
+  const handleFurnitureImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files
+    if (files && files[0]) {
+      const file = files[0]
+      
+      // 文件类型验证
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+      if (!validTypes.includes(file.type)) {
+        setToastMessage(`不支持的文件类型：${file.type}。请上传PNG、JPEG或WebP格式的图片。`)
+        setShowToast(true)
+        return
+      }
+
+      // 文件大小验证（10MB限制）
+      const maxSize = 10 * 1024 * 1024 // 10MB
+      if (file.size > maxSize) {
+        setToastMessage(`文件过大：${(file.size / 1024 / 1024).toFixed(1)}MB。请上传小于10MB的图片。`)
+        setShowToast(true)
+        return
+      }
+
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const imageUrl = e.target?.result as string
+        setShowFurnitureUploadDialog(false)
+        
+        // 开始AI识别过程
+        handleFurnitureRecognition(imageUrl)
+      }
+      reader.onerror = () => {
+        setToastMessage(`读取文件失败：${file.name}`)
+        setShowToast(true)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleFurnitureRecognition = async (imageUrl: string) => {
+    setFurnitureRecognitionLoading(true)
+    
+    try {
+      // 模拟AI识别过程（实际项目中这里应该调用真实的AI识别API）
+      await new Promise(resolve => setTimeout(resolve, 3000))
+      
+      // 模拟识别结果（实际项目中这里应该是AI返回的真实结果）
+      // 80%概率识别成功，20%概率识别失败
+      const isSuccess = Math.random() > 0.2
+      
+      if (isSuccess) {
+        // 识别成功
+        const mockResult = {
+          success: true,
+          furnitureType: "花瓶",
+          similarProducts: [
+            {
+              id: "similar1",
+              name: "现代简约花瓶",
+              image: "https://b.bdstatic.com/searchbox/image/gcp/20250831/1497934224.jpg",
+              price: "¥99"
+            },
+            {
+              id: "similar2",
+              name: "北欧风花瓶",
+              image: "https://b.bdstatic.com/searchbox/image/gcp/20250831/3258317815.webp",
+              price: "¥79"
+            }
+          ],
+          originalImage: imageUrl
+        }
+        setFurnitureRecognitionResult(mockResult)
+        setFurnitureRecognitionDialog(true)
+      } else {
+        // 识别失败
+        const mockResult = {
+          success: false,
+          originalImage: imageUrl
+        }
+        setFurnitureRecognitionResult(mockResult)
+        setFurnitureRecognitionDialog(true)
+      }
+    } catch (error) {
+      console.error("家具识别失败:", error)
+      setToastMessage("家具识别失败，请重试")
+      setShowToast(true)
+    } finally {
+      setFurnitureRecognitionLoading(false)
+    }
+  }
+
+  const handleAddSimilarFurniture = () => {
+    if (selectedSimilarFurniture.length === 0) {
+      setToastMessage("请先选择要添加的相似家具")
+      setShowToast(true)
+      return
+    }
+    
+    if (furnitureRecognitionResult?.similarProducts) {
+      // 获取选中的相似家具
+      const selectedProducts = furnitureRecognitionResult.similarProducts.filter(
+        product => selectedSimilarFurniture.includes(product.id)
+      )
+      
+      // 这里可以添加逻辑来将选中的相似家具添加到对应分类
+      setToastMessage(`已添加 ${selectedProducts.length} 件相似家具到【${furnitureRecognitionResult.furnitureType}】分类`)
+      setShowToast(true)
+      setFurnitureRecognitionDialog(false)
+      setFurnitureRecognitionResult(null)
+      setSelectedSimilarFurniture([]) // 清空选中状态
+    }
+  }
+
+  const handleAddCustomFurniture = () => {
+    setShowCustomFurnitureForm(true)
+  }
+
+  const handleConfirmCustomFurniture = () => {
+    if (customFurnitureData.name && customFurnitureData.scene && customFurnitureData.type) {
+      const newCustomFurniture = {
+        id: Date.now().toString(),
+        name: customFurnitureData.name,
+        image: furnitureRecognitionResult?.originalImage || "",
+        scene: customFurnitureData.scene,
+        type: customFurnitureData.type,
+        isCustom: true,
+        addedAt: new Date()
+      }
+      
+      setToastMessage(`已添加到【${customFurnitureData.type}】分类`)
+      setShowToast(true)
+      
+      // 重置状态
+      setShowCustomFurnitureForm(false)
+      setFurnitureRecognitionDialog(false)
+      setFurnitureRecognitionResult(null)
+      setCustomFurnitureData({ name: "", scene: "", type: "" })
+    } else {
+      setToastMessage("请填写完整的家具信息")
+      setShowToast(true)
     }
   }
 
@@ -1123,6 +1357,7 @@ export default function DesignPage() {
                       <h2 className="text-xl font-semibold mb-2">{selectedStyle.name}</h2>
                       <p className="text-sm text-muted-foreground mb-3">{selectedStyle.description}</p>
                       
+                      
                       {/* 风格关键词 */}
                       <div className="mb-4">
                         <h4 className="text-sm font-medium mb-2">风格关键词</h4>
@@ -1349,6 +1584,23 @@ export default function DesignPage() {
 
             <TabsContent value="furniture" className="p-4 flex-1 overflow-y-auto">
               <div className="space-y-4">
+                {/* 自定义家具上传Banner */}
+                <div 
+                  className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-lg p-4 cursor-pointer hover:from-primary/20 hover:to-primary/10 transition-all duration-200"
+                  onClick={handleFurnitureUploadBannerClick}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="bg-primary/20 rounded-full p-2">
+                      <Upload className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-sm text-primary mb-1">没有喜欢的家具？</h3>
+                      <p className="text-xs text-muted-foreground">上传参考图，AI帮你加入设计</p>
+                    </div>
+                    <Upload className="h-4 w-4 text-primary" />
+                  </div>
+                </div>
+
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input placeholder="搜索家具、材质或平台..." className="pl-10" />
@@ -1406,6 +1658,12 @@ export default function DesignPage() {
                       {(() => {
                         let products: any[] = []
                         switch (selectedFurnitureType) {
+                          case "床":
+                            products = [] // 暂时为空，后续可以添加床产品
+                            break
+                          case "床头柜":
+                            products = bedsideTableProducts
+                            break
                           case "衣柜":
                             products = wardrobeProducts
                             break
@@ -1421,7 +1679,7 @@ export default function DesignPage() {
                           case "床单":
                             products = bedSheetProducts
                             break
-                          case "挂画":
+                          case "装饰品":
                             products = wallArtProducts
                             break
                           default:
@@ -1449,17 +1707,9 @@ export default function DesignPage() {
                                   size="sm"
                                   variant="outline"
                                   className="text-xs h-6 bg-transparent flex-shrink-0"
-                                  onClick={() => handleAddToChat(product.name, product.image)}
-                                >
-                                  添加到对话
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-xs h-6 bg-transparent flex-shrink-0"
                                   onClick={() => handleQuickReplace(product.id, product.name, product.image)}
                                 >
-                                  🔄 一键更换
+                                  🔄 AI更换
                                 </Button>
                                 <Button
                                   size="sm"
@@ -1798,6 +2048,234 @@ export default function DesignPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 自定义家具上传对话框 */}
+      <Dialog open={showFurnitureUploadDialog} onOpenChange={setShowFurnitureUploadDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5 text-primary" />
+              自定义家具上传
+            </DialogTitle>
+            <DialogDescription>
+              上传您喜欢的家具参考图片，AI将为您识别并匹配相似款或加入自定义家具库
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="relative">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFurnitureImageUpload}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              />
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground mb-2">点击上传家具图片</p>
+                <p className="text-xs text-muted-foreground">支持 PNG、JPEG、WebP 格式，最大 10MB</p>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 家具识别确认对话框 */}
+      <Dialog open={furnitureRecognitionDialog} onOpenChange={setFurnitureRecognitionDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-primary" />
+              AI家具识别确认
+            </DialogTitle>
+            <DialogDescription>
+              {furnitureRecognitionResult?.success 
+                ? `已识别出你上传的家具为【${furnitureRecognitionResult.furnitureType}】，请确认。`
+                : "没找到完全相同的，我们帮你加到合适的分类吧～"
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* 主图区域：用户上传的原始家具图 */}
+            <div className="rounded-lg overflow-hidden border">
+              <img
+                src={furnitureRecognitionResult?.originalImage || "/placeholder.svg"}
+                alt="上传的家具图片"
+                className="w-full h-48 object-cover"
+              />
+            </div>
+
+            {/* 识别成功：显示相似家具 */}
+            {furnitureRecognitionResult?.success && furnitureRecognitionResult.similarProducts && (
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm">相似款推荐：</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  {furnitureRecognitionResult.similarProducts.map((product) => (
+                    <div key={product.id} className="bg-muted/50 rounded-lg p-3 border">
+                      <div className="relative">
+                        <img
+                          src={product.image || "/placeholder.svg"}
+                          alt={product.name}
+                          className="w-full h-24 object-cover rounded mb-2"
+                        />
+                        {/* 勾选框放在图片右上角 */}
+                        <div className="absolute top-1 right-1">
+                          <Checkbox
+                            id={product.id}
+                            checked={selectedSimilarFurniture.includes(product.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedSimilarFurniture(prev => [...prev, product.id])
+                              } else {
+                                setSelectedSimilarFurniture(prev => prev.filter(id => id !== product.id))
+                              }
+                            }}
+                            className="bg-white/90 border-2 border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                          />
+                        </div>
+                        {/* 相似款标签放在图片左上角 */}
+                        <div className="absolute top-1 left-1">
+                          <Badge className="bg-primary/90 text-white text-xs">相似款</Badge>
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs font-medium">{product.name}</p>
+                        <p className="text-xs text-primary font-semibold">{product.price}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  推荐结果可能与原家具存在差异
+                </p>
+                {selectedSimilarFurniture.length > 0 && (
+                  <p className="text-xs text-primary text-center">
+                    已选择 {selectedSimilarFurniture.length} 件相似家具
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* 识别失败：显示家具类别选择 */}
+            {!furnitureRecognitionResult?.success && (
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm">请选择家具类别：</h4>
+                <div className="grid grid-cols-3 gap-2">
+                  {furnitureTypes.map((type) => (
+                    <Button
+                      key={type}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => setCustomFurnitureData(prev => ({ ...prev, type }))}
+                    >
+                      {type}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => {
+              setFurnitureRecognitionDialog(false)
+              setSelectedSimilarFurniture([]) // 清空选中状态
+            }}>
+              取消
+            </Button>
+            {furnitureRecognitionResult?.success ? (
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleAddCustomFurniture}>
+                  仅加入自定义图
+                </Button>
+                <Button onClick={handleAddSimilarFurniture} disabled={selectedSimilarFurniture.length === 0}>
+                  添加相似家具
+                </Button>
+              </div>
+            ) : (
+              <Button onClick={handleAddCustomFurniture} disabled={!customFurnitureData.type}>
+                确认分类
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 自定义家具表单对话框 */}
+      <Dialog open={showCustomFurnitureForm} onOpenChange={setShowCustomFurnitureForm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5 text-primary" />
+              添加自定义家具
+            </DialogTitle>
+            <DialogDescription>
+              请填写家具信息，将其添加到您的自定义家具库中
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="furniture-name">家具名称</Label>
+              <Input
+                id="furniture-name"
+                placeholder="例如：北欧风床头柜"
+                value={customFurnitureData.name}
+                onChange={(e) => setCustomFurnitureData(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="furniture-scene">家具场景</Label>
+              <Select value={customFurnitureData.scene} onValueChange={(value) => setCustomFurnitureData(prev => ({ ...prev, scene: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="选择场景" />
+                </SelectTrigger>
+                <SelectContent>
+                  {furnitureScenes.map((scene) => (
+                    <SelectItem key={scene} value={scene}>
+                      {scene}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="furniture-type">家具类型</Label>
+              <Select value={customFurnitureData.type} onValueChange={(value) => setCustomFurnitureData(prev => ({ ...prev, type: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="选择类型" />
+                </SelectTrigger>
+                <SelectContent>
+                  {furnitureTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCustomFurnitureForm(false)}>
+              取消
+            </Button>
+            <Button onClick={handleConfirmCustomFurniture}>
+              确认添加
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 家具识别loading效果 */}
+      {furnitureRecognitionLoading && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="text-center">
+              <p className="text-lg font-semibold text-gray-900">AI智能识别中…</p>
+              <p className="text-sm text-gray-600 mt-1">正在识别您上传的家具，请稍候</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

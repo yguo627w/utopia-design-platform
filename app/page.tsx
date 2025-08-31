@@ -512,12 +512,6 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
-
-      <div className="fixed bottom-8 right-8 z-50">
-        <Button size="lg" className="rounded-full h-16 w-16 shadow-2xl animate-float hover-scale" title="AI助手">
-          <MessageCircle className="h-6 w-6" />
-        </Button>
-      </div>
     </div>
   )
 }

@@ -550,16 +550,16 @@ export default function DesignPage() {
   const furnitureScenes = ["卧室", "客厅", "餐厅", "浴室"]
   const furnitureTypes = ["床", "沙发", "柜子", "椅子", "桌子", "灯具", "装饰", "收纳", "其他"]
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
     if (files) {
-      Array.from(files).forEach((file) => {
+      for (const file of Array.from(files)) {
         // 文件类型验证
         const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
         if (!validTypes.includes(file.type)) {
           setToastMessage(`不支持的文件类型：${file.type}。请上传PNG、JPEG或WebP格式的图片。`)
           setShowToast(true)
-          return
+          continue
         }
 
         // 文件大小验证（10MB限制）
@@ -567,29 +567,46 @@ export default function DesignPage() {
         if (file.size > maxSize) {
           setToastMessage(`文件过大：${(file.size / 1024 / 1024).toFixed(1)}MB。请上传小于10MB的图片。`)
           setShowToast(true)
-          return
+          continue
         }
 
-        const reader = new FileReader()
-        reader.onload = (e) => {
+        try {
+          // 直接上传文件到云端
+          const formData = new FormData()
+          formData.append('file', file)
+
+          const response = await fetch('/api/upload-image', {
+            method: 'POST',
+            body: formData
+          })
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}))
+            throw new Error(errorData.error || `上传失败: ${response.status}`)
+          }
+
+          const uploadData = await response.json()
+          const cloudUrl = uploadData.imageUrl
+
+          // 存储云端URL而不是本地URL
           const newImage = {
             id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-            url: e.target?.result as string,
+            url: cloudUrl,
             name: file.name,
           }
           setChatImages((prev) => [...prev, newImage])
-          sessionStorage.setItem("uploadedImage", e.target?.result as string)
+          sessionStorage.setItem("uploadedImage", cloudUrl)
           sessionStorage.setItem("uploadedImageName", file.name)
           
           setToastMessage(`已添加图片：${file.name}`)
           setShowToast(true)
-        }
-        reader.onerror = () => {
-          setToastMessage(`读取文件失败：${file.name}`)
+          
+        } catch (error) {
+          console.error('图片上传失败:', error)
+          setToastMessage(`图片上传失败：${error instanceof Error ? error.message : '未知错误'}`)
           setShowToast(true)
         }
-        reader.readAsDataURL(file)
-      })
+      }
     }
   }
 
@@ -859,41 +876,96 @@ export default function DesignPage() {
       return null
     }
 
-    // 如果是HTTP/HTTPS URL，直接返回
+    // 如果是HTTP/HTTPS URL（云端URL），直接返回
     if (imageData.startsWith("http://") || imageData.startsWith("https://")) {
       console.log("[v0] Valid HTTP/HTTPS URL:", imageData)
       return imageData
     }
 
-    // 如果是blob URL，尝试转换为data URL
+    // 如果是本地文件路径，尝试转换为完整URL
+    if (imageData.startsWith("/")) {
+      console.log("[v0] Local file path, converting to full URL")
+      return `${window.location.origin}${imageData}`
+    }
+
+    // 如果是blob URL，需要先转换为data URL再上传
     if (imageData.startsWith("blob:")) {
-      console.log("[v0] Converting blob URL to data URL")
+      console.log("[v0] Blob URL detected, converting to data URL first")
       try {
+        // 先获取blob数据
         const response = await fetch(imageData)
         const blob = await response.blob()
+        
+        // 转换为data URL
         const dataUrl = await new Promise<string>((resolve) => {
           const reader = new FileReader()
           reader.onload = () => resolve(reader.result as string)
           reader.readAsDataURL(blob)
         })
-        console.log("[v0] Converted blob to data URL successfully")
-        return dataUrl
+        
+        console.log("[v0] Converted to data URL, length:", dataUrl.length)
+        
+        // 使用data URL上传
+        const uploadResponse = await fetch("/api/upload-image", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ imageData: dataUrl }),
+        })
+
+        if (!uploadResponse.ok) {
+          let errorMessage = `图片上传失败: ${uploadResponse.status}`
+          try {
+            const errorData = await uploadResponse.json()
+            errorMessage = `图片上传失败: ${errorData.error || errorMessage}`
+          } catch (parseError) {
+            console.error("[v0] Failed to parse error response:", parseError)
+          }
+          console.error("[v0] Upload failed:", errorMessage)
+          return null
+        }
+
+        const uploadData = await uploadResponse.json()
+        console.log("[v0] Image uploaded successfully, cloud URL:", uploadData.imageUrl)
+        return uploadData.imageUrl
       } catch (error) {
         console.error("[v0] Failed to convert blob URL:", error)
         return null
       }
     }
-
-    // 如果是data URL，直接返回
+    
+    // 如果是data URL，直接上传
     if (imageData.startsWith("data:")) {
-      console.log("[v0] Valid data URL")
-      return imageData
-    }
+      console.log("[v0] Data URL detected, uploading to cloud")
+      try {
+        const uploadResponse = await fetch("/api/upload-image", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ imageData }),
+        })
 
-    // 如果是本地文件路径，尝试转换为data URL
-    if (imageData.startsWith("/")) {
-      console.log("[v0] Local file path, converting to full URL")
-      return `${window.location.origin}${imageData}`
+        if (!uploadResponse.ok) {
+          let errorMessage = `图片上传失败: ${uploadResponse.status}`
+          try {
+            const errorData = await uploadResponse.json()
+            errorMessage = `图片上传失败: ${errorData.error || errorMessage}`
+          } catch (parseError) {
+            console.error("[v0] Failed to parse error response:", parseError)
+          }
+          console.error("[v0] Upload failed:", errorMessage)
+          return null
+        }
+
+        const uploadData = await uploadResponse.json()
+        console.log("[v0] Image uploaded successfully, cloud URL:", uploadData.imageUrl)
+        return uploadData.imageUrl
+      } catch (error) {
+        console.error("[v0] Failed to upload image:", error)
+        return null
+      }
     }
 
     console.log("[v0] No valid image URL found")
@@ -972,7 +1044,23 @@ export default function DesignPage() {
       const imageUrl = await convertImageToUrl(roomImage)
 
       if (!imageUrl) {
-        throw new Error("无法获取有效的图片URL。请确保：\n• 已上传房间照片\n• 图片格式为PNG、JPEG、JPG或WebP\n• 图片大小不超过10MB")
+        // 提供更友好的错误信息
+        let errorMessage = "无法获取有效的图片URL。"
+        
+        if (!roomImage) {
+          errorMessage = "请先上传房间照片，然后再进行对话修改。"
+        } else if (roomImage.startsWith("blob:") || roomImage.startsWith("data:")) {
+          errorMessage = "图片上传到云端失败，请检查网络连接后重试。\n\n建议解决方案：\n1. 检查网络连接是否正常\n2. 重新上传图片\n3. 确保图片格式为PNG、JPEG、JPG或WebP\n4. 确保图片大小不超过10MB"
+        } else {
+          errorMessage = "图片格式不支持或图片过大，请确保：\n• 图片格式为PNG、JPEG、JPG或WebP\n• 图片大小不超过10MB"
+        }
+        
+        console.error("[v0] Image URL conversion failed:", {
+          roomImage: roomImage ? roomImage.substring(0, 50) + "..." : "null",
+          imageUrl: imageUrl
+        })
+        
+        throw new Error(errorMessage)
       }
 
       console.log("[v0] Sending API request with:", {

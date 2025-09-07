@@ -11,95 +11,75 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required parameters: prompt and image" }, { status: 400 })
     }
 
-    let processedImage = image
+    let processedImageUrl = image
     let useFallback = false
 
-    // 改进的图像格式处理逻辑
-    if (image.startsWith("blob:") || image.startsWith("data:")) {
-      // 对于blob URL和data URL，记录日志但继续处理
-      console.log("[API] Received blob/data URL, attempting to process:", image.substring(0, 50) + "...")
-      // 不立即使用fallback，让外部API尝试处理
-    } else if (image.includes(".webp")) {
-      // WebP格式现在也尝试处理，而不是直接拒绝
-      console.log("[API] Received WebP image, attempting to process")
-      // 不立即使用fallback
+    // 检查图片URL格式
+    if (image.startsWith("blob:") || image.startsWith("data:") || image.includes("localhost")) {
+      console.log("[API] 检测到本地图片，前端应该已经上传到云端")
+      // 前端应该已经处理了图片上传，这里直接使用传入的URL
+      processedImageUrl = image
     } else if (!image.toLowerCase().match(/\.(png|jpeg|jpg|webp)(\?|$)/)) {
       // 如果是不支持的格式，使用fallback
       console.log("[API] Unsupported image format, using fallback")
       useFallback = true
-      processedImage =
-        "https://design.gemcoder.com/staticResource/echoAiSystemImages/676985223975790e510ca20672144337.png"
+      processedImageUrl = "https://design.gemcoder.com/staticResource/echoAiSystemImages/676985223975790e510ca20672144337.png"
     }
 
     console.log("[API] Original image:", image)
-    console.log("[API] Processed image:", processedImage)
+    console.log("[API] Processed image URL:", processedImageUrl)
     console.log("[API] Using fallback:", useFallback)
 
-    // 从环境变量获取API密钥，如果没有设置则返回错误
-    const apiKey = process.env.AI_IMAGE_GENERATION_API_KEY
-    if (!apiKey) {
-      console.error("[API] Missing API key in environment variables")
-      return NextResponse.json({ error: "API configuration error" }, { status: 500 })
-    }
-
     try {
-      console.log("[API] Sending request to external API with:", {
-        model: "doubao-seededit-3-0-i2i-250628",
-        prompt,
-        image: processedImage.substring(0, 100) + (processedImage.length > 100 ? "..." : ""),
-        response_format: "url",
-        size: "adaptive",
-        seed: 10,
-        guidance_scale: 5.5,
-        watermark: false,
+      // 使用新的seededit接口
+      console.log("[API] Sending request to seededit API with:", {
+        image_url: processedImageUrl,
+        prompt: "在其他家具不变的情况，请按照我的输入进行图片修改，修改指令如下：" + prompt,
       })
 
-      const response = await fetch("https://ark.cn-beijing.volces.com/api/v3/images/generations", {
+      const response = await fetch("http://competitor-cy.bcc-szth.baidu.com:80/doubao/edit-image", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: "doubao-seededit-3-0-i2i-250628",
+          image_url: processedImageUrl,
           prompt: "在其他家具不变的情况，请按照我的输入进行图片修改，修改指令如下：" + prompt,
-          image: processedImage,
-          response_format: "url",
-          size: "adaptive",
-          seed: 10,
-          guidance_scale: 5.5,
-          watermark: false,
         }),
       })
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error("[API] External API error:", errorText)
+        console.error("[API] Seededit API error:", errorText)
         
         // 如果外部API失败且我们使用的是原始图像，尝试使用fallback
         if (!useFallback && (image.startsWith("blob:") || image.startsWith("data:") || image.includes(".webp"))) {
           console.log("[API] Retrying with fallback image")
-          return await retryWithFallback(prompt, apiKey)
+          return await retryWithFallback(prompt)
         }
         
-        throw new Error(`API request failed with status ${response.status}: ${errorText}`)
+        throw new Error(`Seededit API request failed with status ${response.status}: ${errorText}`)
       }
 
       const result = await response.json()
-      console.log("[API] External API response:", result)
+      console.log("[API] Seededit API response:", result)
 
-      if (result.data && result.data[0] && result.data[0].url) {
-        console.log("[API] Successfully generated image:", result.data[0].url)
-        return NextResponse.json({ imageUrl: result.data[0].url })
+      // 根据新接口的响应格式解析结果
+      // 假设新接口返回格式为 { image_url: "..." } 或 { url: "..." } 或 { data: { url: "..." } }
+      let imageUrl = result.image_url || result.url || result.data?.url || result.data?.image_url
+      
+      if (imageUrl) {
+        console.log("[API] Successfully generated image:", imageUrl)
+        return NextResponse.json({ imageUrl })
       } else {
-        console.error("[API] Invalid API response format:", result)
-        throw new Error("Invalid API response format")
+        console.error("[API] Invalid seededit API response format:", result)
+        throw new Error("Invalid seededit API response format")
       }
     } catch (apiError) {
       // 如果API调用失败且我们还没有使用fallback，尝试使用fallback
       if (!useFallback) {
         console.log("[API] API call failed, retrying with fallback")
-        return await retryWithFallback(prompt, apiKey)
+        return await retryWithFallback(prompt)
       }
       throw apiError
     }
@@ -113,39 +93,37 @@ export async function POST(request: NextRequest) {
 }
 
 // 使用fallback图像重试的函数
-async function retryWithFallback(prompt: string, apiKey: string) {
+async function retryWithFallback(prompt: string) {
   const fallbackImage = "https://design.gemcoder.com/staticResource/echoAiSystemImages/676985223975790e510ca20672144337.png"
   
-  const response = await fetch("https://ark.cn-beijing.volces.com/api/v3/images/generations", {
+  const response = await fetch("http://competitor-cy.bcc-szth.baidu.com:80/doubao/edit-image", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "doubao-seededit-3-0-i2i-250628",
+      image_url: fallbackImage,
       prompt: "在其他家具不变的情况，请按照我的输入进行图片修改，修改指令如下：" + prompt,
-      image: fallbackImage,
-      response_format: "url",
-      size: "adaptive",
-      seed: 10,
-      guidance_scale: 5.5,
-      watermark: false,
     }),
   })
 
   if (!response.ok) {
     const errorText = await response.text()
-    throw new Error(`Fallback API request failed with status ${response.status}: ${errorText}`)
+    throw new Error(`Fallback seededit API request failed with status ${response.status}: ${errorText}`)
   }
 
   const result = await response.json()
-  if (result.data && result.data[0] && result.data[0].url) {
+  console.log("[API] Fallback seededit API response:", result)
+  
+  // 根据新接口的响应格式解析结果
+  let imageUrl = result.image_url || result.url || result.data?.url || result.data?.image_url
+  
+  if (imageUrl) {
     return NextResponse.json({ 
-      imageUrl: result.data[0].url,
+      imageUrl,
       note: "使用了默认参考图像生成设计方案"
     })
   } else {
-    throw new Error("Invalid fallback API response format")
+    throw new Error("Invalid fallback seededit API response format")
   }
 }

@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({
           image_url: processedImageUrl,
           prompt: "在其他家具不变的情况，请按照我的输入进行图片修改，修改指令如下：" + prompt,
+          watermark: "False",
         }),
       })
 
@@ -104,6 +105,7 @@ async function retryWithFallback(prompt: string) {
     body: JSON.stringify({
       image_url: fallbackImage,
       prompt: "在其他家具不变的情况，请按照我的输入进行图片修改，修改指令如下：" + prompt,
+      watermark: "False",
     }),
   })
 

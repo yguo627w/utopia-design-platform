@@ -622,51 +622,103 @@ export default function DesignPage() {
     }
   }
 
-  const handleQuickReplace = (productId: number, productName: string, productImage?: string) => {
+  const handleQuickReplace = async (productId: number, productName: string, productImage?: string) => {
     console.log(`[v0] Quick replacing with ${productName}`)
-    if (productImage) {
-      // 设置一键替换loading状态
-      setQuickReplaceLoading(true)
-      
-      // 查找对应的产品，获取修改后的图片
-      const sofaProduct = sofaProducts.find(product => product.id === productId)
-      const wardrobeProduct = wardrobeProducts.find(product => product.id === productId)
-      const coffeeTableProduct = coffeeTableProducts.find(product => product.id === productId)
-      const vaseProduct = vaseProducts.find(product => product.id === productId)
-      const bedSheetProduct = bedSheetProducts.find(product => product.id === productId)
-      const wallArtProduct = wallArtProducts.find(product => product.id === productId)
-      const bedsideTableProduct = bedsideTableProducts.find(product => product.id === productId)
-      
-      // 根据产品名称确定产品类型，避免ID冲突
-      let modifiedImage = null
-      if (productName.includes('沙发')) {
-        modifiedImage = sofaProduct?.modifiedImage
-      } else if (productName.includes('衣柜')) {
-        modifiedImage = wardrobeProduct?.modifiedImage
-      } else if (productName.includes('茶几')) {
-        modifiedImage = coffeeTableProduct?.modifiedImage
-      } else if (productName.includes('花瓶')) {
-        modifiedImage = vaseProduct?.modifiedImage
-      } else if (productName.includes('床单')) {
-        modifiedImage = bedSheetProduct?.modifiedImage
-      } else if (productName.includes('床头柜')) {
-        modifiedImage = bedsideTableProduct?.modifiedImage
-      } else if (productName.includes('装饰品') || productName.includes('挂画')) {
-        modifiedImage = wallArtProduct?.modifiedImage
-      }
-      
-      // 3秒后显示修改后的图片
-      setTimeout(() => {
-        if (modifiedImage) {
-          setRoomImage(modifiedImage)
-          setToastMessage(`已将房间中的${productName}替换为修改后的效果`)
-        } else {
-          setRoomImage(productImage)
-          setToastMessage(`已将房间中的${productName}替换为选中的产品`)
+    if (!productImage) {
+      setToastMessage('产品图片不可用，无法进行AI更换')
+      setShowToast(true)
+      return
+    }
+
+    if (!roomImage) {
+      setToastMessage('请先上传房间照片，然后再进行AI更换')
+      setShowToast(true)
+      return
+    }
+
+    // 设置一键替换loading状态
+    setQuickReplaceLoading(true)
+
+    try {
+      // 处理当前房间图片URL
+      let image1Url = roomImage
+      if (roomImage.startsWith("blob:") || roomImage.startsWith("data:")) {
+        console.log("[Gemini] Converting room image to cloud URL...")
+        const convertedUrl = await convertImageToUrl(roomImage)
+        if (!convertedUrl) {
+          throw new Error("房间图片上传到云端失败")
         }
+        image1Url = convertedUrl
+      }
+
+      // 确定家具分类名称
+      let furnitureType = "家具"
+      if (productName.includes('沙发')) {
+        furnitureType = "沙发"
+      } else if (productName.includes('衣柜')) {
+        furnitureType = "衣柜"
+      } else if (productName.includes('茶几')) {
+        furnitureType = "茶几"
+      } else if (productName.includes('花瓶')) {
+        furnitureType = "花瓶"
+      } else if (productName.includes('床单')) {
+        furnitureType = "床单"
+      } else if (productName.includes('床头柜')) {
+        furnitureType = "床头柜"
+      } else if (productName.includes('装饰品') || productName.includes('挂画')) {
+        furnitureType = "装饰品"
+      } else if (productName.includes('床')) {
+        furnitureType = "床"
+      } else if (productName.includes('椅子')) {
+        furnitureType = "椅子"
+      } else if (productName.includes('桌子')) {
+        furnitureType = "桌子"
+      } else if (productName.includes('灯具')) {
+        furnitureType = "灯具"
+      }
+
+      // 生成prompt
+      const prompt = `在其他家具不变的情况把，把【image1_url】中的【${furnitureType}】，换成【image2_url】中的【${furnitureType}】`
+
+      console.log("[Gemini] Calling Gemini API with:", {
+        image1_url: image1Url,
+        image2_url: productImage,
+        prompt
+      })
+
+      // 调用Gemini接口
+      const response = await fetch('/api/gemini-merge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image1_url: image1Url,
+          image2_url: productImage,
+          prompt
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || `Gemini API调用失败: ${response.status}`)
+      }
+
+      const result = await response.json()
+      if (result.success && result.imageUrl) {
+        setRoomImage(result.imageUrl)
+        setToastMessage(`已将房间中的${furnitureType}替换为选中的${productName}`)
         setShowToast(true)
-        setQuickReplaceLoading(false)
-      }, 3000)
+      } else {
+        throw new Error(result.error || "Gemini API返回无效结果")
+      }
+
+    } catch (error) {
+      console.error("[Gemini] Quick replace failed:", error)
+      setToastMessage(`AI更换失败: ${error instanceof Error ? error.message : '未知错误'}`)
+      setShowToast(true)
+    } finally {
+      setQuickReplaceLoading(false)
     }
   }
 

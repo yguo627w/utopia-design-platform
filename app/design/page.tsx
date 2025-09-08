@@ -588,6 +588,7 @@ export default function DesignPage() {
     
     setFurnitureDetectionLoading(true)
     setFurnitureDetectionError(false)
+    setFurnitureDetectionTriggered(true) // 标记已触发识别
     
     console.log("[Furniture Detection] Starting detection for:", imageUrl)
     
@@ -632,6 +633,56 @@ export default function DesignPage() {
     }
   }
 
+  // 风格理解函数
+  const detectStyle = async (imageUrl: string) => {
+    console.log("[Style Detection] ===== STARTING STYLE DETECTION =====")
+    console.log("[Style Detection] Image URL:", imageUrl)
+    
+    setStyleUnderstandingLoading(true)
+    
+    try {
+      const requestBody = {
+        image_url: imageUrl,
+        type: "style"
+      }
+      
+      console.log("[Style Detection] Sending request:", requestBody)
+      
+      const response = await fetch('/api/detect-furniture', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error("[Style Detection] API Error:", errorData)
+        throw new Error(`风格理解失败: ${response.status} - ${errorData.error || '未知错误'}`)
+      }
+
+      const result = await response.json()
+      console.log("[Style Detection] API Response:", result)
+      
+      if (result.success && result.content) {
+        setStyleKeywords(result.content)
+        console.log("[Style Detection] Success:", result.content)
+      } else {
+        console.log("[Style Detection] No style detected or API failed:", result)
+        setStyleKeywords("")
+      }
+    } catch (error) {
+      console.error("[Style Detection] Error:", error)
+      setStyleKeywords("")
+      // 显示用户友好的错误信息
+      setToastMessage(`风格理解失败：${error instanceof Error ? error.message : '未知错误'}`)
+      setShowToast(true)
+    } finally {
+      setStyleUnderstandingLoading(false)
+    }
+  }
+
   const getKeyFurniture = () => {
     // 如果正在识别家具，显示加载状态
     if (furnitureDetectionLoading) {
@@ -662,7 +713,8 @@ export default function DesignPage() {
                       !roomImage.includes("localhost") &&
                       (roomImage.startsWith("http://") || roomImage.startsWith("https://"))
     
-    if (isCloudUrl && furnitureDetectionTriggered && detectedFurniture.length === 0 && !furnitureDetectionError) {
+    // 如果是云端图片且已触发识别，但还没有结果，显示加载状态
+    if (isCloudUrl && furnitureDetectionTriggered && !furnitureDetectionError) {
       return [{ name: "AI智能识别中", icon: "🤖" }]
     }
     
@@ -762,14 +814,19 @@ export default function DesignPage() {
           setRoomImage(cloudUrl)
           setDetectedFurniture([]) // 清空之前的识别结果
           setFurnitureDetectionError(false) // 重置错误状态
+          setFurnitureDetectionTriggered(false) // 重置触发状态
           
-          // 直接触发家具识别
+          // 直接触发家具识别和风格理解
           console.log("[Image Upload] ===== UPLOAD COMPLETE =====")
           console.log("[Image Upload] Cloud URL:", cloudUrl)
-          console.log("[Image Upload] Triggering furniture detection for:", cloudUrl)
-          setTimeout(() => {
-            console.log("[Image Upload] About to call detectFurniture")
+          console.log("[Image Upload] Triggering furniture detection and style detection for:", cloudUrl)
+          setTimeout(async () => {
+            console.log("[Image Upload] About to call detectFurniture and detectStyle")
             detectFurniture(cloudUrl)
+            // 等待风格理解完成后再打开对话框
+            await detectStyle(cloudUrl)
+            // 打开风格确认对话框
+            setStyleConfirmationDialog(true)
           }, 1000)
           
           setToastMessage(`已添加图片：${file.name}`)
@@ -1359,7 +1416,7 @@ export default function DesignPage() {
     setShowStyleDesignDialog(true)
   }
 
-  const handleReferenceImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleReferenceImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
     if (files && files[0]) {
       const file = files[0]
@@ -1380,43 +1437,41 @@ export default function DesignPage() {
         return
       }
 
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const imageUrl = e.target?.result as string
-        setReferenceImage(imageUrl)
-        setShowStyleDesignDialog(false)
+      try {
+        // 先上传图片到云端
+        const formData = new FormData()
+        formData.append('file', file)
+
+        const uploadResponse = await fetch('/api/upload-image', {
+          method: 'POST',
+          body: formData
+        })
+
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json().catch(() => ({}))
+          throw new Error(errorData.error || `上传失败: ${uploadResponse.status}`)
+        }
+
+        const uploadData = await uploadResponse.json()
+        const cloudUrl = uploadData.imageUrl
+
+        // 设置参考图片为云端URL
+        setReferenceImage(cloudUrl)
         
-        // 开始AI理解过程
-        handleStyleUnderstanding(imageUrl)
-      }
-      reader.onerror = () => {
-        setToastMessage(`读取文件失败：${file.name}`)
+        // 开始AI理解过程，使用云端URL
+        detectStyle(cloudUrl).then(() => {
+          // 风格理解完成后关闭上传对话框并打开确认对话框
+          setShowStyleDesignDialog(false)
+          setStyleConfirmationDialog(true)
+        })
+      } catch (error) {
+        console.error('图片上传失败:', error)
+        setToastMessage(`图片上传失败：${error instanceof Error ? error.message : '未知错误'}`)
         setShowToast(true)
       }
-      reader.readAsDataURL(file)
     }
   }
 
-  const handleStyleUnderstanding = async (imageUrl: string) => {
-    setStyleUnderstandingLoading(true)
-    
-    try {
-      // 模拟AI理解过程（实际项目中这里应该调用真实的AI理解API）
-      await new Promise(resolve => setTimeout(resolve, 3000))
-      
-      // 模拟理解结果（实际项目中这里应该是AI返回的真实结果）
-      // 使用与弹窗显示一致的详细风格信息
-      const mockKeywords = "温馨复古风、主色调暖棕色家具，辅助米白色墙面，点缀墨绿色装饰"
-      setStyleKeywords(mockKeywords)
-      setStyleConfirmationDialog(true)
-    } catch (error) {
-      console.error("风格理解失败:", error)
-      setToastMessage("风格理解失败，请重试")
-      setShowToast(true)
-    } finally {
-      setStyleUnderstandingLoading(false)
-    }
-  }
 
   const handleConfirmStyleDesign = async () => {
     setStyleConfirmationDialog(false)
@@ -2306,19 +2361,27 @@ export default function DesignPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="relative">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleReferenceImageUpload}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-              />
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground mb-2">点击上传参考图片</p>
-                <p className="text-xs text-muted-foreground">支持 PNG、JPEG、WebP 格式，最大 10MB</p>
+            {styleUnderstandingLoading ? (
+              <div className="border-2 border-dashed border-primary/50 rounded-lg p-6 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+                <p className="text-sm text-primary mb-2">AI风格理解中...</p>
+                <p className="text-xs text-muted-foreground">正在分析您的风格图片，请稍候</p>
               </div>
-            </div>
+            ) : (
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleReferenceImageUpload}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                />
+                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                  <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground mb-2">点击上传参考图片</p>
+                  <p className="text-xs text-muted-foreground">支持 PNG、JPEG、WebP 格式，最大 10MB</p>
+                </div>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -2339,7 +2402,16 @@ export default function DesignPage() {
             <div className="bg-muted/50 rounded-lg p-4">
               <p className="text-sm font-medium text-primary mb-3">识别到的风格信息：</p>
               <div className="space-y-2 text-sm text-muted-foreground">
-                <p><span className="font-medium">温馨复古风、主色调暖棕色家具，辅助米白色墙面，点缀墨绿色装饰</span></p>
+                {styleUnderstandingLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                    <span>AI正在分析风格...</span>
+                  </div>
+                ) : styleKeywords ? (
+                  <p><span className="font-medium">{styleKeywords}</span></p>
+                ) : (
+                  <p className="text-muted-foreground">暂无风格信息</p>
+                )}
               </div>
             </div>
             {referenceImage && (

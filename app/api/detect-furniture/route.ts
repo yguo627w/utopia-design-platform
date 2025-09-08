@@ -2,9 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const { image_url } = await request.json()
+    const { image_url, type = "furniture" } = await request.json()
 
-    console.log("[API] Received furniture detection request:", { image_url })
+    console.log("[API] Received detection request:", { image_url, type })
 
     if (!image_url) {
       console.error("[API] Missing required parameter: image_url")
@@ -12,8 +12,10 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const requestBody = {
-        prompt: `一、识别目标：请识别图片中的关键家具。
+      // 根据type参数选择不同的prompt
+      const prompt = type === "style" 
+        ? `请分析我上传的家装照片，识别并总结关键风格元素。只需输出一句简短描述，包含整体风格、主色调、辅助色和点缀色。格式示例：【温馨复古风、主色调暖棕色家具，辅助米白色墙面，点缀墨绿色装饰】。`
+        : `一、识别目标：请识别图片中的关键家具。
 二、识别说明
 1.优先返回大件家具（如：床、沙发、柜子、椅子、桌子）。
 2.最后返回小件或装饰性物品（如：植物、小摆件）。
@@ -21,18 +23,24 @@ export async function POST(request: NextRequest) {
 4.可以返回的家具名称来源： ["床", "沙发", "柜子", "椅子", "桌子", "灯具", "装饰", "收纳", "其他"]
 三、输出要求：
 1.仅返回家具名称。如【床】【沙发】【柜子】【椅子】
-2.无需返回思考信息`,
+2.无需返回思考信息`
+
+      const requestBody = {
+        prompt: prompt,
         image_url: image_url,
       }
       
-      console.log("[API] Sending request to furniture detection API:", requestBody)
+      console.log("[API] Sending request to detection API:", requestBody)
+      console.log("[API] Request type:", type)
       
-      // 调用家具识别API - 使用URL查询参数格式
-      const url = new URL("http://competitor-cy.bcc-szth.baidu.com:80/ai_search")
+      // 调用识别API - 使用URL查询参数格式
+      const url = new URL("http://competitor-cy.bcc-szth.baidu.com:80//ai_search")
       url.searchParams.append('prompt', requestBody.prompt)
       url.searchParams.append('image_url', requestBody.image_url)
       
       console.log("[API] Final request URL:", url.toString())
+      console.log("[API] Prompt length:", requestBody.prompt.length)
+      console.log("[API] Image URL:", requestBody.image_url)
       
       const response = await fetch(url.toString(), {
         method: "POST",
@@ -50,7 +58,7 @@ export async function POST(request: NextRequest) {
       const result = await response.json()
       console.log("[API] Furniture detection API response:", result)
 
-      // 解析返回的家具信息
+      // 解析返回的信息
       let furnitureNames: string[] = []
       let rawContent = ""
       
@@ -63,22 +71,36 @@ export async function POST(request: NextRequest) {
       
       console.log("[API] Raw content from API:", rawContent)
       
-      if (rawContent) {
-        // 解析content中的家具名称，格式如：【床】【沙发】【柜子】【椅子】
-        const furnitureMatches = rawContent.match(/【([^】]+)】/g)
-        if (furnitureMatches) {
-          furnitureNames = furnitureMatches.map((match: string) => match.replace(/【|】/g, ''))
+      if (type === "style") {
+        // 风格理解模式：去掉【】符号后返回content内容
+        const cleanedContent = rawContent.replace(/【|】/g, '')
+        console.log("[API] Style detection result:", rawContent)
+        console.log("[API] Cleaned content:", cleanedContent)
+        
+        return NextResponse.json({ 
+          success: true,
+          content: cleanedContent,
+          fullResponse: result // 添加完整响应用于调试
+        })
+      } else {
+        // 家具识别模式：解析家具名称
+        if (rawContent) {
+          // 解析content中的家具名称，格式如：【床】【沙发】【柜子】【椅子】
+          const furnitureMatches = rawContent.match(/【([^】]+)】/g)
+          if (furnitureMatches) {
+            furnitureNames = furnitureMatches.map((match: string) => match.replace(/【|】/g, ''))
+          }
         }
-      }
 
-      console.log("[API] Parsed furniture names:", furnitureNames)
-      
-      return NextResponse.json({ 
-        success: true,
-        furnitureNames: furnitureNames,
-        rawContent: rawContent,
-        fullResponse: result // 添加完整响应用于调试
-      })
+        console.log("[API] Parsed furniture names:", furnitureNames)
+        
+        return NextResponse.json({ 
+          success: true,
+          furnitureNames: furnitureNames,
+          rawContent: rawContent,
+          fullResponse: result // 添加完整响应用于调试
+        })
+      }
     } catch (apiError) {
       console.error("[API] Furniture detection error:", apiError)
       throw apiError

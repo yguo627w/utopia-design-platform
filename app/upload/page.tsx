@@ -84,21 +84,34 @@ export default function UploadPage() {
         return
       }
 
-      // Create a URL for the selected image
-      const imageUrl = URL.createObjectURL(file)
+      // 上传文件到云端
+      const formData = new FormData()
+      formData.append('file', file)
 
-      // Simulate loading time
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      const response = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData
+      })
 
-      // Store the image in sessionStorage to pass to design page
-      sessionStorage.setItem("uploadedImage", imageUrl)
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || `上传失败: ${response.status}`)
+      }
+
+      const uploadData = await response.json()
+      const cloudUrl = uploadData.imageUrl
+
+      console.log("[Upload Page] Image uploaded to cloud:", cloudUrl)
+
+      // Store the cloud URL in sessionStorage to pass to design page
+      sessionStorage.setItem("uploadedImage", cloudUrl)
       sessionStorage.setItem("uploadedImageName", file.name)
 
       // Navigate to design page
       router.push("/design")
     } catch (error) {
       console.error("File upload error:", error)
-      setToastMessage("文件上传失败，请重试")
+      setToastMessage(`文件上传失败：${error instanceof Error ? error.message : '未知错误'}`)
       setShowToast(true)
       setIsLoading(false)
     }

@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useRouter } from "next/navigation"
+import { useEffect, useRef } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -41,7 +42,7 @@ import {
   Plus as PlusIcon,
   X,
 } from "lucide-react"
-import { useState, useEffect, useRef } from "react"
+import { useState } from "react"
 import { useCart } from "@/hooks/use-cart"
 
 interface ChatMessage {
@@ -78,9 +79,15 @@ export default function DesignPage() {
   const [zoomLevel, setZoomLevel] = useState(1)
   const [chatImages, setChatImages] = useState<Array<{ id: string; url: string; name: string }>>([])
   const [activeTab, setActiveTab] = useState("inspiration")
-  const [roomImage, setRoomImage] = useState(
-    "https://design.gemcoder.com/staticResource/echoAiSystemImages/676985223975790e510ca20672144337.png",
-  )
+  const [roomImage, setRoomImage] = useState(() => {
+    // 页面加载时立即从sessionStorage读取图片，避免闪烁
+    if (typeof window !== 'undefined') {
+      const uploadedImage = sessionStorage.getItem("uploadedImage")
+      const selectedStyleImage = sessionStorage.getItem("selectedStyleImage")
+      return uploadedImage || selectedStyleImage || "https://design.gemcoder.com/staticResource/echoAiSystemImages/676985223975790e510ca20672144337.png"
+    }
+    return "https://design.gemcoder.com/staticResource/echoAiSystemImages/676985223975790e510ca20672144337.png"
+  })
   const [selectedStyleTitle, setSelectedStyleTitle] = useState("")
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState("")
@@ -122,8 +129,54 @@ export default function DesignPage() {
   const [customFamilyTag, setCustomFamilyTag] = useState("")
   const [showCustomTagInput, setShowCustomTagInput] = useState(false)
   
+  // 新增家具识别相关状态
+  const [furnitureDetectionLoading, setFurnitureDetectionLoading] = useState(false)
+  const [detectedFurniture, setDetectedFurniture] = useState<Array<{ name: string; icon: string }>>([])
+  const [furnitureDetectionError, setFurnitureDetectionError] = useState(false)
+  const [furnitureDetectionTriggered, setFurnitureDetectionTriggered] = useState(false)
+  
   // 聊天容器引用，用于自动滚动
   const chatContainerRef = useRef<HTMLDivElement>(null)
+  
+  // 监听roomImage变化，触发家具识别
+  useEffect(() => {
+    console.log("[Furniture Detection] useEffect triggered, roomImage:", roomImage)
+    console.log("[Furniture Detection] Current state:", {
+      detectedFurniture: detectedFurniture.length,
+      furnitureDetectionLoading,
+      furnitureDetectionError,
+      furnitureDetectionTriggered
+    })
+    
+    // 只有云端URL才触发家具识别，排除blob地址和本地地址
+    const isCloudUrl = roomImage && 
+                      roomImage !== "/placeholder.svg" && 
+                      !roomImage.includes("design.gemcoder.com") &&
+                      !roomImage.startsWith("blob:") &&
+                      !roomImage.startsWith("data:") &&
+                      !roomImage.includes("localhost") &&
+                      (roomImage.startsWith("http://") || roomImage.startsWith("https://"))
+    
+    console.log("[Furniture Detection] isCloudUrl:", isCloudUrl)
+    
+    if (isCloudUrl &&
+        detectedFurniture.length === 0 && 
+        !furnitureDetectionLoading &&
+        !furnitureDetectionError &&
+        !furnitureDetectionTriggered) {
+      console.log("[Furniture Detection] Triggering detection for cloud URL:", roomImage)
+      setFurnitureDetectionTriggered(true)
+      detectFurniture(roomImage)
+    } else {
+      console.log("[Furniture Detection] Not triggering detection, conditions:", {
+        isCloudUrl,
+        detectedFurnitureLength: detectedFurniture.length,
+        furnitureDetectionLoading,
+        furnitureDetectionError,
+        furnitureDetectionTriggered
+      })
+    }
+  }, [roomImage, detectedFurniture.length, furnitureDetectionLoading, furnitureDetectionError, furnitureDetectionTriggered])
   
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
@@ -199,13 +252,25 @@ export default function DesignPage() {
     const styleType = sessionStorage.getItem("selectedStyleType")
 
     if (uploadedImage) {
-      setRoomImage(uploadedImage)
+      // 只有在roomImage不是用户上传的图片时才设置，避免重复设置
+      if (roomImage !== uploadedImage) {
+        setRoomImage(uploadedImage)
+      }
       // 清理所有上传相关的sessionStorage数据
       sessionStorage.removeItem("uploadedImage")
       sessionStorage.removeItem("uploadedImageName")
-      console.log("[v0] Loaded uploaded image and cleaned sessionStorage")
+      console.log("[v0] Loaded uploaded image:", uploadedImage)
+      
+      // 如果是云端URL，设置一个标记避免useEffect重复触发
+      if (uploadedImage.startsWith("http://") || uploadedImage.startsWith("https://")) {
+        console.log("[v0] Will trigger furniture detection via useEffect")
+        // 不在这里直接调用，让useEffect处理
+      }
     } else if (selectedStyleImage) {
-      setRoomImage(selectedStyleImage)
+      // 只有在roomImage不是选中的风格图片时才设置，避免重复设置
+      if (roomImage !== selectedStyleImage) {
+        setRoomImage(selectedStyleImage)
+      }
       if (styleTitle) {
         setSelectedStyleTitle(styleTitle)
       }
@@ -511,9 +576,75 @@ export default function DesignPage() {
     },
   ]
 
+  // 家具识别函数
+  const detectFurniture = async (imageUrl: string) => {
+    console.log("[Furniture Detection] ===== STARTING DETECTION =====")
+    console.log("[Furniture Detection] Image URL:", imageUrl)
+    console.log("[Furniture Detection] Current state before:", {
+      furnitureDetectionLoading,
+      detectedFurniture: detectedFurniture.length,
+      furnitureDetectionError
+    })
+    
+    setFurnitureDetectionLoading(true)
+    setFurnitureDetectionError(false)
+    
+    console.log("[Furniture Detection] Starting detection for:", imageUrl)
+    
+    try {
+      const requestBody = {
+        image_url: imageUrl,
+      }
+      
+      console.log("[Furniture Detection] Sending request:", requestBody)
+      
+      const response = await fetch('/api/detect-furniture', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      })
+
+      if (!response.ok) {
+        throw new Error(`家具识别失败: ${response.status}`)
+      }
+
+      const result = await response.json()
+      
+      if (result.success && result.furnitureNames && result.furnitureNames.length > 0) {
+        // 将识别到的家具名称转换为带icon的格式
+        const furnitureWithIcons = result.furnitureNames.map((name: string) => ({
+          name,
+          icon: furnitureIconMap[name] || "❓"
+        }))
+        setDetectedFurniture(furnitureWithIcons)
+        console.log("[Furniture Detection] Success:", furnitureWithIcons)
+      } else {
+        setFurnitureDetectionError(true)
+        console.log("[Furniture Detection] No furniture detected")
+      }
+    } catch (error) {
+      console.error("[Furniture Detection] Error:", error)
+      setFurnitureDetectionError(true)
+    } finally {
+      setFurnitureDetectionLoading(false)
+    }
+  }
+
   const getKeyFurniture = () => {
-    // 如果用户上传了本地图片，显示默认的关键家具
-    if (roomImage && roomImage !== "/placeholder.svg") {
+    // 如果正在识别家具，显示加载状态
+    if (furnitureDetectionLoading) {
+      return [{ name: "AI智能识别中", icon: "🤖" }]
+    }
+    
+    // 如果识别到家具，返回识别的结果
+    if (detectedFurniture.length > 0) {
+      return detectedFurniture
+    }
+    
+    // 如果识别失败，显示默认家具
+    if (furnitureDetectionError) {
       return [
         { name: "沙发", icon: "🛋️" },
         { name: "茶几", icon: "🪑" },
@@ -522,6 +653,20 @@ export default function DesignPage() {
       ]
     }
     
+    // 如果用户上传了云端图片且已触发识别，显示加载状态
+    const isCloudUrl = roomImage && 
+                      roomImage !== "/placeholder.svg" && 
+                      !roomImage.includes("design.gemcoder.com") &&
+                      !roomImage.startsWith("blob:") &&
+                      !roomImage.startsWith("data:") &&
+                      !roomImage.includes("localhost") &&
+                      (roomImage.startsWith("http://") || roomImage.startsWith("https://"))
+    
+    if (isCloudUrl && furnitureDetectionTriggered && detectedFurniture.length === 0 && !furnitureDetectionError) {
+      return [{ name: "AI智能识别中", icon: "🤖" }]
+    }
+    
+    // 预设风格的关键家具
     if (selectedStyleTitle === "北欧风客厅") {
       return [
         { name: "沙发", icon: "🛋️" },
@@ -538,6 +683,8 @@ export default function DesignPage() {
         { name: "台灯", icon: "💡" },
       ]
     }
+    
+    // 默认家具
     return [
       { name: "衣柜", icon: "🚪" },
       { name: "床单", icon: "🛏️" },
@@ -549,6 +696,19 @@ export default function DesignPage() {
   // 家具场景和类型选项
   const furnitureScenes = ["卧室", "客厅", "餐厅", "浴室"]
   const furnitureTypes = ["床", "沙发", "柜子", "椅子", "桌子", "灯具", "装饰", "收纳", "其他"]
+  
+  // 家具icon映射表
+  const furnitureIconMap: { [key: string]: string } = {
+    "床": "🛏️",
+    "沙发": "🛋️",
+    "柜子": "🚪",
+    "椅子": "🪑",
+    "桌子": "🍽️",
+    "灯具": "💡",
+    "装饰": "🎨",
+    "收纳": "📦",
+    "其他": "❓"
+  }
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
@@ -597,6 +757,20 @@ export default function DesignPage() {
           setChatImages((prev) => [...prev, newImage])
           sessionStorage.setItem("uploadedImage", cloudUrl)
           sessionStorage.setItem("uploadedImageName", file.name)
+          
+          // 设置房间图片并触发家具识别
+          setRoomImage(cloudUrl)
+          setDetectedFurniture([]) // 清空之前的识别结果
+          setFurnitureDetectionError(false) // 重置错误状态
+          
+          // 直接触发家具识别
+          console.log("[Image Upload] ===== UPLOAD COMPLETE =====")
+          console.log("[Image Upload] Cloud URL:", cloudUrl)
+          console.log("[Image Upload] Triggering furniture detection for:", cloudUrl)
+          setTimeout(() => {
+            console.log("[Image Upload] About to call detectFurniture")
+            detectFurniture(cloudUrl)
+          }, 1000)
           
           setToastMessage(`已添加图片：${file.name}`)
           setShowToast(true)

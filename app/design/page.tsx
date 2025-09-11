@@ -151,6 +151,18 @@ export default function DesignPage() {
   const [mbtiResult, setMbtiResult] = useState<{ name: string; description: string } | null>(null)
   const [mbtiDesignLoading, setMbtiDesignLoading] = useState(false)
   
+  // 智能家具识别状态
+  const [showSmartRecognitionDialog, setShowSmartRecognitionDialog] = useState(false)
+  const [showRecognitionResultDialog, setShowRecognitionResultDialog] = useState(false)
+  const [smartRecognitionLoading, setSmartRecognitionLoading] = useState(false)
+  const [recognizedFurniture, setRecognizedFurniture] = useState<Array<{
+    name: string;
+    icon: string;
+    price: number;
+    image: string;
+    description: string;
+  }>>([])
+  
   // 聊天容器引用，用于自动滚动
   const chatContainerRef = useRef<HTMLDivElement>(null)
   
@@ -1668,6 +1680,93 @@ export default function DesignPage() {
     setMbtiResult(null)
   }
 
+  // 智能家具识别相关函数
+  const handleSmartRecognitionOpen = () => {
+    setShowSmartRecognitionDialog(true)
+  }
+
+  const handleSmartRecognitionStart = async () => {
+    if (!roomImage) {
+      console.error("[Smart Recognition] No room image available")
+      return
+    }
+
+    setSmartRecognitionLoading(true)
+    setShowSmartRecognitionDialog(false)
+
+    try {
+      console.log("[Smart Recognition] Starting furniture recognition for:", roomImage)
+      
+      const response = await fetch("/api/detect-furniture", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          image_url: roomImage,
+          type: "furniture"
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Furniture detection failed")
+      }
+
+      const result = await response.json()
+      console.log("[Smart Recognition] Detection result:", result)
+
+      if (result.success && result.furnitureNames && result.furnitureNames.length > 0) {
+        // 模拟商品匹配（实际项目中应该调用商品匹配API）
+        const matchedFurniture = result.furnitureNames.map((furnitureName: string) => ({
+          name: furnitureName,
+          icon: furnitureIconMap[furnitureName] || "🪑",
+          price: Math.floor(Math.random() * 5000) + 500, // 模拟价格
+          image: "/placeholder.svg", // 模拟商品图片
+          description: `${furnitureName} - 高品质家具`
+        }))
+
+        setRecognizedFurniture(matchedFurniture)
+        setShowRecognitionResultDialog(true)
+      } else {
+        throw new Error("No furniture detected")
+      }
+    } catch (error) {
+      console.error("[Smart Recognition] Error:", error)
+      // 显示错误提示弹窗
+      setShowRecognitionResultDialog(true)
+      setRecognizedFurniture([{
+        name: "识别失败",
+        icon: "❌",
+        price: 0,
+        image: "/placeholder.svg",
+        description: "未能识别到家具，请确保图片中有清晰的家具"
+      }])
+    } finally {
+      setSmartRecognitionLoading(false)
+    }
+  }
+
+  const handleSmartRecognitionClose = () => {
+    setShowSmartRecognitionDialog(false)
+    setShowRecognitionResultDialog(false)
+    setRecognizedFurniture([])
+  }
+
+  const handleSmartAddToCart = (furniture: any) => {
+    // 这里应该调用购物车API
+    console.log("[Smart Recognition] Adding to cart:", furniture)
+    // 可以添加成功提示
+  }
+
+  const handleSmartAddAllToCart = () => {
+    recognizedFurniture.forEach(furniture => {
+      handleSmartAddToCart(furniture)
+    })
+    setShowRecognitionResultDialog(false)
+    setRecognizedFurniture([])
+  }
+
   // AI风格设计相关函数
   const handleStyleDesignBannerClick = () => {
     setShowStyleDesignDialog(true)
@@ -2434,16 +2533,28 @@ export default function DesignPage() {
                   </div>
                 )}
 
-                <div className="pt-4 border-t">
-                  <h3 className="text-sm font-medium mb-2">热门平台推荐</h3>
-                  <div className="grid grid-cols-3 gap-2">
-                    {["1688", "淘宝", "咸鱼", "小红书", "拼多多", "闲鱼"].map((brand) => (
-                      <Button key={brand} variant="outline" size="sm" className="text-xs bg-transparent">
-                        {brand}
-                      </Button>
-                    ))}
+                {/* 分割线 */}
+                <div className="border-t border-border/50"></div>
+
+                {/* 智能购物建议 */}
+                <div className="bg-gradient-to-r from-blue-500/10 to-green-500/10 rounded-lg p-4 border border-blue-200/50">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="bg-gradient-to-r from-blue-500 to-green-500 rounded-full p-2">
+                      <span className="text-white text-lg">🛒</span>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-blue-700">智能购物建议</h3>
+                      <p className="text-sm text-blue-600">AI识别页面家具，一键购买</p>
+                    </div>
                   </div>
+                  <Button 
+                    onClick={handleSmartRecognitionOpen}
+                    className="w-full bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-semibold"
+                  >
+                    🔍 识别当前页面家具
+                  </Button>
                 </div>
+
               </div>
             </TabsContent>
           </Tabs>
@@ -3209,6 +3320,115 @@ export default function DesignPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* 智能家具识别确认弹窗 */}
+      <Dialog open={showSmartRecognitionDialog} onOpenChange={setShowSmartRecognitionDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-xl">🛒</span>
+              识别当前页面家具
+            </DialogTitle>
+            <DialogDescription>
+              AI智能识别页面中的家具信息匹配家居商场，设计中一键购物
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* 当前页面设计图预览 */}
+            <div className="bg-muted/50 rounded-lg p-4">
+              <div className="text-center">
+                <img
+                  src={roomImage || "/placeholder.svg"}
+                  alt="当前页面设计图"
+                  className="w-full h-32 object-cover rounded-lg mb-2"
+                />
+                <p className="text-sm text-muted-foreground">当前页面设计图</p>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSmartRecognitionDialog(false)}>
+              取消
+            </Button>
+            <Button onClick={handleSmartRecognitionStart}>
+              开始识别
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 智能家具识别结果弹窗 */}
+      <Dialog open={showRecognitionResultDialog} onOpenChange={setShowRecognitionResultDialog}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-xl">🛒</span>
+              AI家具识别
+            </DialogTitle>
+            <DialogDescription>
+              已识别你上传的房间图片中的家具，匹配商城信息如下。请确认。
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {recognizedFurniture.map((furniture, index) => (
+              <div key={index} className="bg-muted/50 rounded-lg p-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center border">
+                    <img
+                      src={furniture.image}
+                      alt={furniture.name}
+                      className="w-12 h-12 object-cover rounded"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">{furniture.icon}</span>
+                      <h3 className="font-semibold">{furniture.name}</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-2">{furniture.description}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg font-bold text-primary">¥{furniture.price}</span>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline">
+                          查看详情
+                        </Button>
+                        <Button size="sm" onClick={() => handleSmartAddToCart(furniture)}>
+                          加入购物车
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={handleSmartRecognitionClose}>
+              稍后再说
+            </Button>
+            <Button onClick={handleSmartAddAllToCart}>
+              全选加入购物车
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 智能识别加载状态 */}
+      {smartRecognitionLoading && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="text-center">
+              <p className="text-lg font-semibold text-gray-900">AI智能识别中…</p>
+              <p className="text-sm text-gray-600 mt-1">正在识别页面中的家具，请稍候</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

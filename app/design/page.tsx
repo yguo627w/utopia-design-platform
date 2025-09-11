@@ -441,9 +441,18 @@ export default function DesignPage() {
 
   const sofaProducts = [
     {
+      id: 204,
+      name: "白色沙发",
+      image: "https://b.bdstatic.com/searchbox/image/gcp/20250911/3926973670.webp",
+      modifiedImage: "https://b.bdstatic.com/searchbox/image/gcp/20250911/3926973670.webp",
+      price: "¥299",
+      rating: 4.8,
+      reviews: 136,
+    },
+    {
       id: 201,
       name: "条纹三人沙发",
-      image: "https://malexa.bj.bcebos.com/Utopia/%E6%B2%99%E5%8F%911.jpg",
+      image: "https://b.bdstatic.com/searchbox/image/gcp/20250911/3934358587.webp",
       modifiedImage: "https://malexa.bj.bcebos.com/Utopia/%E6%B2%99%E5%8F%91%E4%BF%AE%E6%94%B91.jpg",
       price: "¥429",
       rating: 4.8,
@@ -577,14 +586,22 @@ export default function DesignPage() {
   ]
 
   // 家具识别函数
-  const detectFurniture = async (imageUrl: string) => {
+  const detectFurniture = async (imageUrl: string, retryCount = 0) => {
     console.log("[Furniture Detection] ===== STARTING DETECTION =====")
     console.log("[Furniture Detection] Image URL:", imageUrl)
+    console.log("[Furniture Detection] Retry count:", retryCount)
     console.log("[Furniture Detection] Current state before:", {
       furnitureDetectionLoading,
       detectedFurniture: detectedFurniture.length,
       furnitureDetectionError
     })
+    
+    // 设置超时机制，防止无限重试
+    const timeoutId = setTimeout(() => {
+      console.log("[Furniture Detection] Timeout reached, stopping retries")
+      setFurnitureDetectionLoading(false)
+      setFurnitureDetectionError(true)
+    }, 30000) // 30秒超时
     
     setFurnitureDetectionLoading(true)
     setFurnitureDetectionError(false)
@@ -612,8 +629,11 @@ export default function DesignPage() {
       }
 
       const result = await response.json()
+      console.log("[Furniture Detection] API Response:", result)
       
       if (result.success && result.furnitureNames && result.furnitureNames.length > 0) {
+        // 清除超时
+        clearTimeout(timeoutId)
         // 将识别到的家具名称转换为带icon的格式
         const furnitureWithIcons = result.furnitureNames.map((name: string) => ({
           name,
@@ -621,15 +641,39 @@ export default function DesignPage() {
         }))
         setDetectedFurniture(furnitureWithIcons)
         console.log("[Furniture Detection] Success:", furnitureWithIcons)
+      } else if (result.success === false && retryCount < 2) {
+        // API返回错误，重试
+        console.log("[Furniture Detection] API returned error, retrying...", result.error)
+        console.log("[Furniture Detection] Retry count:", retryCount, "Max retries: 2")
+        setTimeout(() => {
+          detectFurniture(imageUrl, retryCount + 1)
+        }, 2000) // 2秒后重试
+        return
       } else {
+        // 清除超时
+        clearTimeout(timeoutId)
         setFurnitureDetectionError(true)
-        console.log("[Furniture Detection] No furniture detected")
+        console.log("[Furniture Detection] No furniture detected or max retries reached. Result:", result)
       }
     } catch (error) {
       console.error("[Furniture Detection] Error:", error)
-      setFurnitureDetectionError(true)
+      if (retryCount < 2) {
+        // 网络错误，重试
+        console.log("[Furniture Detection] Network error, retrying...")
+        setTimeout(() => {
+          detectFurniture(imageUrl, retryCount + 1)
+        }, 2000) // 2秒后重试
+        return
+      } else {
+        // 清除超时
+        clearTimeout(timeoutId)
+        setFurnitureDetectionError(true)
+      }
     } finally {
-      setFurnitureDetectionLoading(false)
+      // 只有在不是重试的情况下才设置loading为false
+      if (retryCount === 0 || retryCount >= 2) {
+        setFurnitureDetectionLoading(false)
+      }
     }
   }
 
@@ -684,27 +728,7 @@ export default function DesignPage() {
   }
 
   const getKeyFurniture = () => {
-    // 如果正在识别家具，显示加载状态
-    if (furnitureDetectionLoading) {
-      return [{ name: "AI智能识别中", icon: "🤖" }]
-    }
-    
-    // 如果识别到家具，返回识别的结果
-    if (detectedFurniture.length > 0) {
-      return detectedFurniture
-    }
-    
-    // 如果识别失败，显示默认家具
-    if (furnitureDetectionError) {
-      return [
-        { name: "沙发", icon: "🛋️" },
-        { name: "茶几", icon: "🪑" },
-        { name: "花瓶", icon: "🏺" },
-        { name: "灯具", icon: "💡" },
-      ]
-    }
-    
-    // 如果用户上传了云端图片且已触发识别，显示加载状态
+    // 检查是否为云端图片
     const isCloudUrl = roomImage && 
                       roomImage !== "/placeholder.svg" && 
                       !roomImage.includes("design.gemcoder.com") &&
@@ -713,9 +737,39 @@ export default function DesignPage() {
                       !roomImage.includes("localhost") &&
                       (roomImage.startsWith("http://") || roomImage.startsWith("https://"))
     
-    // 如果是云端图片且已触发识别，但还没有结果，显示加载状态
-    if (isCloudUrl && furnitureDetectionTriggered && !furnitureDetectionError) {
+    console.log("[getKeyFurniture] Current state:", {
+      furnitureDetectionLoading,
+      detectedFurniture: detectedFurniture.length,
+      furnitureDetectionError,
+      furnitureDetectionTriggered,
+      isCloudUrl
+    })
+    
+    // 如果正在识别家具，显示加载状态
+    if (furnitureDetectionLoading) {
       return [{ name: "AI智能识别中", icon: "🤖" }]
+    }
+    
+    // 如果是云端图片且已触发识别，但还没有结果，显示加载状态
+    if (isCloudUrl && furnitureDetectionTriggered && !furnitureDetectionError && detectedFurniture.length === 0) {
+      return [{ name: "AI智能识别中", icon: "🤖" }]
+    }
+    
+    // 如果识别到家具，返回识别的结果
+    if (detectedFurniture.length > 0) {
+      console.log("[getKeyFurniture] Returning detected furniture:", detectedFurniture)
+      return detectedFurniture
+    }
+    
+    // 如果识别失败，显示默认家具
+    if (furnitureDetectionError) {
+      console.log("[getKeyFurniture] Returning default furniture due to error")
+      return [
+        { name: "沙发", icon: "🛋️" },
+        { name: "茶几", icon: "🪑" },
+        { name: "花瓶", icon: "🏺" },
+        { name: "灯具", icon: "💡" },
+      ]
     }
     
     // 预设风格的关键家具
@@ -814,15 +868,14 @@ export default function DesignPage() {
           setRoomImage(cloudUrl)
           setDetectedFurniture([]) // 清空之前的识别结果
           setFurnitureDetectionError(false) // 重置错误状态
-          setFurnitureDetectionTriggered(false) // 重置触发状态
+          // 不重置 furnitureDetectionTriggered，让 useEffect 处理触发逻辑
           
-          // 直接触发家具识别和风格理解
+          // 让useEffect处理家具识别，这里只处理风格理解
           console.log("[Image Upload] ===== UPLOAD COMPLETE =====")
           console.log("[Image Upload] Cloud URL:", cloudUrl)
-          console.log("[Image Upload] Triggering furniture detection and style detection for:", cloudUrl)
+          console.log("[Image Upload] Letting useEffect handle furniture detection, triggering style detection")
           setTimeout(async () => {
-            console.log("[Image Upload] About to call detectFurniture and detectStyle")
-            detectFurniture(cloudUrl)
+            console.log("[Image Upload] About to call detectStyle")
             // 等待风格理解完成后再打开对话框
             await detectStyle(cloudUrl)
             // 打开风格确认对话框

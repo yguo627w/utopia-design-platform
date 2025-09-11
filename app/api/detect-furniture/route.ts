@@ -33,6 +33,8 @@ export async function POST(request: NextRequest) {
       console.log("[API] Final request URL:", url.toString())
       console.log("[API] Prompt length:", requestBody.prompt.length)
       console.log("[API] Image URL:", requestBody.image_url)
+      console.log("[API] Image URL encoded:", encodeURIComponent(requestBody.image_url))
+      console.log("[API] Image URL decoded:", decodeURIComponent(encodeURIComponent(requestBody.image_url)))
       
       const response = await fetch(url.toString(), {
         method: "POST",
@@ -49,6 +51,16 @@ export async function POST(request: NextRequest) {
 
       const result = await response.json()
       console.log("[API] Furniture detection API response:", result)
+
+      // 检查API是否返回错误
+      if (result.code && result.code !== 'success') {
+        console.log("[API] API returned error:", result.message)
+        return NextResponse.json({ 
+          success: false,
+          error: result.message || "API调用失败",
+          fullResponse: result
+        })
+      }
 
       // 解析返回的信息
       let furnitureNames: string[] = []

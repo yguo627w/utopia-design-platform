@@ -1010,13 +1010,10 @@ export default function DesignPage() {
         furnitureType = "灯具"
       }
 
-      // 生成prompt
-      const prompt = `在其他家具不变的情况把，把【image1_url】中的【${furnitureType}】，换成【image2_url】中的【${furnitureType}】`
-
       console.log("[Gemini] Calling Gemini API with:", {
         image1_url: image1Url,
         image2_url: productImage,
-        prompt
+        furniture_type: furnitureType
       })
 
       // 调用Gemini接口
@@ -1028,7 +1025,7 @@ export default function DesignPage() {
         body: JSON.stringify({
           image1_url: image1Url,
           image2_url: productImage,
-          prompt
+          furniture_type: furnitureType
         }),
       })
 

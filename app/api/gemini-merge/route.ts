@@ -1,29 +1,65 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// 家具分类名称到英文的映射
+const furnitureTypeMapping: { [key: string]: string } = {
+  "床": "bed",
+  "沙发": "sofa", 
+  "柜子": "cabinet",
+  "椅子": "chair",
+  "桌子": "table",
+  "茶几": "coffee table",
+  "灯具": "lamp",
+  "装饰": "decoration",
+  "收纳": "storage",
+  "其他": "furniture",
+  "衣柜": "wardrobe",
+  "书桌": "desk",
+  "餐桌": "dining table",
+  "床头柜": "nightstand",
+  "电视柜": "TV stand",
+  "鞋柜": "shoe cabinet",
+  "书架": "bookshelf",
+  "梳妆台": "dressing table",
+  "酒柜": "wine cabinet",
+  "储物柜": "storage cabinet"
+}
+
+// 生成合并图片的prompt
+function generateMergePrompt(furnitureType: string): string {
+  const englishFurnitureType = furnitureTypeMapping[furnitureType] || "furniture"
+  
+  return `Replace the ${englishFurnitureType} in the indoor scene image with the ${englishFurnitureType} from the furniture image. Keep the original indoor background unchanged. Scale and place the ${englishFurnitureType} according to its real-world dimensions. Ensure that the ${englishFurnitureType} is realistically proportioned within the room, aligned with the ${englishFurnitureType} original position, and integrated seamlessly into the scene with correct perspective, lighting, and shadows.`
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { image1_url, image2_url, prompt } = await request.json()
+    const { image1_url, image2_url, furniture_type } = await request.json()
 
     console.log("[Gemini API] Received request:", { 
       image1_url: image1_url ? "image1 provided" : "no image1",
       image2_url: image2_url ? "image2 provided" : "no image2",
-      prompt: prompt ? prompt.substring(0, 50) + "..." : "no prompt"
+      furniture_type: furniture_type || "no furniture_type"
     })
 
-    if (!image1_url || !image2_url || !prompt) {
+    if (!image1_url || !image2_url || !furniture_type) {
       console.error("[Gemini API] Missing required parameters:", { 
         image1_url: !!image1_url, 
         image2_url: !!image2_url, 
-        prompt: !!prompt 
+        furniture_type: !!furniture_type 
       })
       return NextResponse.json({ 
-        error: "Missing required parameters: image1_url, image2_url, and prompt" 
+        error: "Missing required parameters: image1_url, image2_url, and furniture_type" 
       }, { status: 400 })
     }
+
+    // 生成prompt
+    const prompt = generateMergePrompt(furniture_type)
+    console.log("[Gemini API] Generated prompt:", prompt)
 
     console.log("[Gemini API] Sending request to Gemini API with:", {
       image1_url,
       image2_url,
+      furniture_type,
       prompt
     })
 

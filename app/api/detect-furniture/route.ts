@@ -15,15 +15,7 @@ export async function POST(request: NextRequest) {
       // 根据type参数选择不同的prompt
       const prompt = type === "style" 
         ? `请分析我上传的家装照片，识别并总结关键风格元素。只需输出一句简短描述，包含整体风格、主色调、辅助色和点缀色。格式示例：【温馨复古风、主色调暖棕色家具，辅助米白色墙面，点缀墨绿色装饰】。`
-        : `一、识别目标：请识别图片中的关键家具。
-二、识别说明
-1.优先返回大件家具（如：床、沙发、柜子、椅子、桌子）。
-2.最后返回小件或装饰性物品（如：植物、小摆件）。
-3.按照返回数量优先级，优先返回大件家具，后返回小装饰品，仅返回前4个家具信息。如没有大件家具可返回小装饰品。
-4.可以返回的家具名称来源： ["床", "沙发", "柜子", "椅子", "桌子", "灯具", "装饰", "收纳", "其他"]
-三、输出要求：
-1.仅返回家具名称。如【床】【沙发】【柜子】【椅子】
-2.无需返回思考信息`
+        : `一、识别目标：请识别图片中的关键家具。二、识别说明1.优先返回大件家具（如：床、沙发、柜子、椅子、桌子）。2.最后返回小件或装饰性物品（如：植物、小摆件）。3.按照返回数量优先级，优先返回大件家具，后返回小装饰品，仅返回前4个家具信息。如没有大件家具可返回小装饰品。4.可以返回的家具名称来源： ["床", "沙发", "柜子", "椅子", "桌子", "灯具", "装饰", "收纳", "其他"]三、输出要求：1.仅返回家具名称。如【床】【沙发】【柜子】【椅子】2.无需返回思考信息`
 
       const requestBody = {
         prompt: prompt,
@@ -33,7 +25,7 @@ export async function POST(request: NextRequest) {
       console.log("[API] Sending request to detection API:", requestBody)
       console.log("[API] Request type:", type)
       
-      // 调用识别API - 使用URL查询参数格式
+      // 调用识别API - 使用URL查询参数格式（按照curl示例）
       const url = new URL("http://competitor-cy.bcc-szth.baidu.com:80//ai_search")
       url.searchParams.append('prompt', requestBody.prompt)
       url.searchParams.append('image_url', requestBody.image_url)

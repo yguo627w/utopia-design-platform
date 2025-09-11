@@ -144,6 +144,13 @@ export default function DesignPage() {
   const [showFurnitureEditDialog, setShowFurnitureEditDialog] = useState(false)
   const [editingFurniture, setEditingFurniture] = useState<Array<{ name: string; icon: string; dimensions: { length: number; width: number; height: number } }>>([])
   
+  // MBTI测试状态
+  const [showMbtiTestDialog, setShowMbtiTestDialog] = useState(false)
+  const [showMbtiResult, setShowMbtiResult] = useState(false)
+  const [selectedMbtiType, setSelectedMbtiType] = useState("")
+  const [mbtiResult, setMbtiResult] = useState<{ name: string; description: string } | null>(null)
+  const [mbtiDesignLoading, setMbtiDesignLoading] = useState(false)
+  
   // 聊天容器引用，用于自动滚动
   const chatContainerRef = useRef<HTMLDivElement>(null)
   
@@ -806,6 +813,26 @@ export default function DesignPage() {
   // 家具场景和类型选项
   const furnitureScenes = ["卧室", "客厅", "餐厅", "浴室"]
   const furnitureTypes = ["床", "沙发", "柜子", "椅子", "桌子", "灯具", "装饰", "收纳", "其他"]
+  
+  // MBTI类型和对应的家装风格
+  const mbtiTypes = [
+    { type: "ENFP", name: "ENFP", icon: "🎨", description: "波西米亚混搭风，主色调米白与浅木色，点缀亮黄与绿植，自由随性摆设" },
+    { type: "ENTP", name: "ENTP", icon: "🔧", description: "创意工业风，主色调灰黑金属，辅助原木元素，点缀趣味艺术装饰" },
+    { type: "ESFP", name: "ESFP", icon: "✨", description: "摩登时尚风，主色调亮白与明快色彩，搭配镜面与灯光，点缀流行装饰品" },
+    { type: "ESTP", name: "ESTP", icon: "🏙️", description: "都市极简风，主色调黑白灰，辅以玻璃与金属材质，点缀冷酷灯饰" },
+    { type: "ENFJ", name: "ENFJ", icon: "👑", description: "现代优雅风，主色调米白与柔和灰，搭配大沙发与温暖灯光，点缀金色细节" },
+    { type: "ENTJ", name: "ENTJ", icon: "💼", description: "高端商务风，主色调深棕与黑色，辅以大理石与皮质家具，点缀金属装饰" },
+    { type: "ESFJ", name: "ESFJ", icon: "🏡", description: "温馨美式风，主色调暖米色与浅棕，辅以布艺与木质家具，点缀花卉与相框" },
+    { type: "ESTJ", name: "ESTJ", icon: "🏛️", description: "传统大气风，主色调深木色与米白，辅以沉稳皮质家具，点缀经典对称装饰" },
+    { type: "INFP", name: "INFP", icon: "🌸", description: "文艺侘寂风，主色调米白与原木，辅以棉麻织物，点缀绿植与手工艺品" },
+    { type: "INFJ", name: "INFJ", icon: "🌿", description: "极简北欧风，主色调白色与浅灰，搭配自然光与简洁木质，点缀柔和绿植" },
+    { type: "INTP", name: "INTP", icon: "🔬", description: "功能极简风，主色调灰白与冷蓝，辅以开放书架与储物设计，点缀科技小物" },
+    { type: "INTJ", name: "INTJ", icon: "⚡", description: "冷感极简风，主色调黑白灰，辅以金属与大理石，点缀理性几何装饰" },
+    { type: "ISFP", name: "ISFP", icon: "🌱", description: "自然清新风，主色调原木与米色，辅以柔和织物，点缀绿植与艺术摆件" },
+    { type: "ISFJ", name: "ISFJ", icon: "🌻", description: "温暖田园风，主色调暖米与浅棕，辅以复古布艺，点缀相框与小摆件" },
+    { type: "ISTP", name: "ISTP", icon: "🔩", description: "工业简约风，主色调深灰与木色，辅以金属家具，点缀冷色调灯光" },
+    { type: "ISTJ", name: "ISTJ", icon: "📚", description: "经典实用风，主色调深棕与米白，辅以皮质与木质家具，点缀对称装饰" }
+  ]
   
   // 家具icon映射表
   const furnitureIconMap: { [key: string]: string } = {
@@ -1543,6 +1570,107 @@ export default function DesignPage() {
     setEditingFurniture([])
   }
 
+  // MBTI测试相关函数
+  const handleMbtiTestOpen = () => {
+    setShowMbtiTestDialog(true)
+    setShowMbtiResult(false)
+    setSelectedMbtiType("")
+    setMbtiResult(null)
+  }
+
+  const handleMbtiTypeSelect = (mbtiType: string) => {
+    setSelectedMbtiType(mbtiType)
+  }
+
+  const handleMbtiStartDesign = () => {
+    if (selectedMbtiType) {
+      const selectedMbti = mbtiTypes.find(m => m.type === selectedMbtiType)
+      if (selectedMbti) {
+        setMbtiResult({
+          name: selectedMbti.description.split("，")[0], // 提取风格名称
+          description: selectedMbti.description
+        })
+        setShowMbtiResult(true)
+      }
+    }
+  }
+
+  const handleMbtiRandomStyle = () => {
+    const randomIndex = Math.floor(Math.random() * mbtiTypes.length)
+    const randomMbti = mbtiTypes[randomIndex]
+    setMbtiResult({
+      name: randomMbti.description.split("，")[0], // 提取风格名称
+      description: randomMbti.description
+    })
+    setShowMbtiResult(true)
+  }
+
+  const handleMbtiApplyDesign = async () => {
+    if (!mbtiResult || !roomImage) {
+      console.error("[MBTI] Missing mbtiResult or roomImage")
+      return
+    }
+
+    setMbtiDesignLoading(true)
+    
+    try {
+      console.log("[MBTI] Applying design with style:", mbtiResult.description)
+      
+      const response = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt: mbtiResult.description,
+          image: roomImage,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to generate image")
+      }
+
+      const result = await response.json()
+      console.log("[MBTI] Generated image result:", result)
+
+      if (result.imageUrl) {
+        // 更新房间图片
+        setRoomImage(result.imageUrl)
+        
+        // 关闭弹窗
+        setShowMbtiTestDialog(false)
+        setShowMbtiResult(false)
+        setSelectedMbtiType("")
+        setMbtiResult(null)
+        
+        // 可以添加成功提示
+        console.log("[MBTI] Design applied successfully")
+      } else {
+        throw new Error("No image URL returned from API")
+      }
+    } catch (error) {
+      console.error("[MBTI] Error applying design:", error)
+      // 可以添加错误提示
+    } finally {
+      setMbtiDesignLoading(false)
+    }
+  }
+
+  const handleMbtiRetry = () => {
+    setShowMbtiResult(false)
+    setSelectedMbtiType("")
+    setMbtiResult(null)
+  }
+
+  const handleMbtiTestClose = () => {
+    setShowMbtiTestDialog(false)
+    setShowMbtiResult(false)
+    setSelectedMbtiType("")
+    setMbtiResult(null)
+  }
+
   // AI风格设计相关函数
   const handleStyleDesignBannerClick = () => {
     setShowStyleDesignDialog(true)
@@ -2084,6 +2212,24 @@ export default function DesignPage() {
                   ))}
                 </>
               )}
+
+              {/* MBTI测试模块 */}
+              <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg p-4 border border-purple-200/50">
+                <div className="text-center mb-4">
+                  <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-full p-3 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                    <span className="text-white text-2xl">🎁</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-purple-700 mb-1">盲盒玩法</h3>
+                  <h4 className="text-lg font-semibold text-purple-600 mb-2">测一测你的MBTI最适合哪个家装风格</h4>
+                  <p className="text-sm text-purple-500">发现最适合你的乌托邦风格</p>
+                </div>
+                <Button 
+                  onClick={handleMbtiTestOpen}
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
+                >
+                  🎯 开始测试
+                </Button>
+              </div>
             </TabsContent>
 
             <TabsContent value="furniture" className="p-4 flex-1 overflow-y-auto">
@@ -2968,6 +3114,104 @@ export default function DesignPage() {
           </div>
         </div>
       )}
+
+      {/* MBTI测试弹窗 */}
+      <Dialog open={showMbtiTestDialog} onOpenChange={handleMbtiTestClose}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <span className="text-2xl">🎁</span>
+              盲盒玩法——测一测你的MBTI最适合哪个家装风格
+            </DialogTitle>
+            <DialogDescription>
+              选择你的MBTI类型，发现最适合你的家装风格
+            </DialogDescription>
+          </DialogHeader>
+          
+          {!showMbtiResult ? (
+            <div className="space-y-6">
+              {/* MBTI类型选择区域 */}
+              <div className="grid grid-cols-4 gap-3">
+                {mbtiTypes.map((mbti) => (
+                  <div
+                    key={mbti.type}
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
+                      selectedMbtiType === mbti.type
+                        ? "border-purple-500 bg-purple-50"
+                        : "border-gray-200 hover:border-purple-300"
+                    }`}
+                    onClick={() => handleMbtiTypeSelect(mbti.type)}
+                  >
+                    <div className="text-center">
+                      <div className="text-2xl mb-2">{mbti.icon}</div>
+                      <div className="font-semibold text-sm">{mbti.name}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* 底部按钮 */}
+              <div className="flex gap-3 justify-center">
+                <Button
+                  onClick={handleMbtiStartDesign}
+                  disabled={!selectedMbtiType}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-8"
+                >
+                  开始设计
+                </Button>
+                <Button
+                  onClick={handleMbtiRandomStyle}
+                  variant="outline"
+                  className="border-purple-300 text-purple-600 hover:bg-purple-50 font-semibold px-8"
+                >
+                  随机风格
+                </Button>
+              </div>
+            </div>
+          ) : (
+            /* 结果卡片 */
+            <div className="space-y-6">
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-6 border border-purple-200">
+                <div className="text-center">
+                  <div className="text-4xl mb-4">🎁</div>
+                  <h3 className="text-2xl font-bold text-purple-700 mb-2">
+                    你的盲盒结果是 —— 【{mbtiResult?.name}】
+                  </h3>
+                  <p className="text-gray-700 text-lg leading-relaxed">
+                    {mbtiResult?.description}
+                  </p>
+                </div>
+              </div>
+              
+              {/* 结果按钮 */}
+              <div className="flex gap-3 justify-center">
+                <Button
+                  onClick={handleMbtiApplyDesign}
+                  disabled={mbtiDesignLoading}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-8"
+                >
+                  {mbtiDesignLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      AI设计中...
+                    </>
+                  ) : (
+                    "应用设计"
+                  )}
+                </Button>
+                <Button
+                  onClick={handleMbtiRetry}
+                  disabled={mbtiDesignLoading}
+                  variant="outline"
+                  className="border-purple-300 text-purple-600 hover:bg-purple-50 font-semibold px-8"
+                >
+                  返回重试
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

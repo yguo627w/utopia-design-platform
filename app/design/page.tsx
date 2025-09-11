@@ -131,9 +131,14 @@ export default function DesignPage() {
   
   // 新增家具识别相关状态
   const [furnitureDetectionLoading, setFurnitureDetectionLoading] = useState(false)
-  const [detectedFurniture, setDetectedFurniture] = useState<Array<{ name: string; icon: string }>>([])
+  const [detectedFurniture, setDetectedFurniture] = useState<Array<{ name: string; icon: string; dimensions?: { length: number; width: number; height: number } }>>([])
   const [furnitureDetectionError, setFurnitureDetectionError] = useState(false)
   const [furnitureDetectionTriggered, setFurnitureDetectionTriggered] = useState(false)
+  
+  // 家具尺寸编辑相关状态
+  const [showDimensionEditDialog, setShowDimensionEditDialog] = useState(false)
+  const [editingFurnitureIndex, setEditingFurnitureIndex] = useState<number | null>(null)
+  const [tempDimensions, setTempDimensions] = useState({ length: 0, width: 0, height: 0 })
   
   // 聊天容器引用，用于自动滚动
   const chatContainerRef = useRef<HTMLDivElement>(null)
@@ -441,15 +446,6 @@ export default function DesignPage() {
 
   const sofaProducts = [
     {
-      id: 204,
-      name: "白色沙发",
-      image: "https://b.bdstatic.com/searchbox/image/gcp/20250911/3926973670.webp",
-      modifiedImage: "https://b.bdstatic.com/searchbox/image/gcp/20250911/3926973670.webp",
-      price: "¥299",
-      rating: 4.8,
-      reviews: 136,
-    },
-    {
       id: 201,
       name: "条纹三人沙发",
       image: "https://b.bdstatic.com/searchbox/image/gcp/20250911/3934358587.webp",
@@ -634,10 +630,11 @@ export default function DesignPage() {
       if (result.success && result.furnitureNames && result.furnitureNames.length > 0) {
         // 清除超时
         clearTimeout(timeoutId)
-        // 将识别到的家具名称转换为带icon的格式
+        // 将识别到的家具名称转换为带icon和默认尺寸的格式
         const furnitureWithIcons = result.furnitureNames.map((name: string) => ({
           name,
-          icon: furnitureIconMap[name] || "❓"
+          icon: furnitureIconMap[name] || "❓",
+          dimensions: getDefaultDimensions(name)
         }))
         setDetectedFurniture(furnitureWithIcons)
         console.log("[Furniture Detection] Success:", furnitureWithIcons)
@@ -816,6 +813,22 @@ export default function DesignPage() {
     "其他": "❓"
   }
 
+  // 获取家具默认尺寸
+  const getDefaultDimensions = (furnitureName: string) => {
+    const defaultDimensions: { [key: string]: { length: number; width: number; height: number } } = {
+      "床": { length: 200, width: 150, height: 60 },
+      "沙发": { length: 220, width: 90, height: 85 },
+      "柜子": { length: 120, width: 60, height: 200 },
+      "椅子": { length: 50, width: 50, height: 85 },
+      "桌子": { length: 120, width: 80, height: 75 },
+      "灯具": { length: 30, width: 30, height: 40 },
+      "装饰": { length: 40, width: 40, height: 50 },
+      "收纳": { length: 60, width: 40, height: 30 },
+      "其他": { length: 50, width: 50, height: 50 }
+    }
+    return defaultDimensions[furnitureName] || { length: 50, width: 50, height: 50 }
+  }
+
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files
     if (files) {
@@ -878,8 +891,10 @@ export default function DesignPage() {
             console.log("[Image Upload] About to call detectStyle")
             // 等待风格理解完成后再打开对话框
             await detectStyle(cloudUrl)
-            // 打开风格确认对话框
-            setStyleConfirmationDialog(true)
+            // 只有在不是从风格设计弹窗上传的情况下才打开确认对话框
+            if (!showStyleDesignDialog) {
+              setStyleConfirmationDialog(true)
+            }
           }, 1000)
           
           setToastMessage(`已添加图片：${file.name}`)
@@ -1464,6 +1479,32 @@ export default function DesignPage() {
     setInputMessage(suggestion)
   }
 
+  // 家具尺寸编辑相关函数
+  const handleDimensionEdit = (index: number) => {
+    const furniture = detectedFurniture[index]
+    setEditingFurnitureIndex(index)
+    setTempDimensions(furniture.dimensions || { length: 0, width: 0, height: 0 })
+    setShowDimensionEditDialog(true)
+  }
+
+  const handleDimensionSave = () => {
+    if (editingFurnitureIndex !== null) {
+      const updatedFurniture = [...detectedFurniture]
+      updatedFurniture[editingFurnitureIndex] = {
+        ...updatedFurniture[editingFurnitureIndex],
+        dimensions: tempDimensions
+      }
+      setDetectedFurniture(updatedFurniture)
+    }
+    setShowDimensionEditDialog(false)
+    setEditingFurnitureIndex(null)
+  }
+
+  const handleDimensionCancel = () => {
+    setShowDimensionEditDialog(false)
+    setEditingFurnitureIndex(null)
+  }
+
   // AI风格设计相关函数
   const handleStyleDesignBannerClick = () => {
     setShowStyleDesignDialog(true)
@@ -1515,7 +1556,10 @@ export default function DesignPage() {
         detectStyle(cloudUrl).then(() => {
           // 风格理解完成后关闭上传对话框并打开确认对话框
           setShowStyleDesignDialog(false)
-          setStyleConfirmationDialog(true)
+          // 延迟一点时间再打开确认对话框，确保上传对话框完全关闭
+          setTimeout(() => {
+            setStyleConfirmationDialog(true)
+          }, 100)
         })
       } catch (error) {
         console.error('图片上传失败:', error)
@@ -2023,6 +2067,42 @@ export default function DesignPage() {
                   </div>
                 </div>
 
+                {/* 房间中的家具信息卡 */}
+                <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg p-4 border border-primary/20">
+                  <h3 className="text-sm font-medium mb-3 text-primary">房间中的家具</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    {keyFurniture.slice(0, 4).map((furniture, index) => (
+                      <div key={index} className="bg-white/80 rounded-lg p-3 border border-primary/10">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-lg">{furniture.icon}</span>
+                          <span className="text-sm font-medium">{furniture.name}</span>
+                        </div>
+                        {furniture.dimensions && (
+                          <div className="space-y-1">
+                            <div className="text-xs text-muted-foreground">
+                              长: {furniture.dimensions.length}cm
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              宽: {furniture.dimensions.width}cm
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              高: {furniture.dimensions.height}cm
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full h-6 text-xs mt-2"
+                              onClick={() => handleDimensionEdit(index)}
+                            >
+                              编辑尺寸
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input placeholder="搜索家具、材质或平台..." className="pl-10" />
@@ -2050,7 +2130,7 @@ export default function DesignPage() {
 
                 <div data-furniture-section>
                   <h3 className="text-sm font-medium mb-3">家具分类</h3>
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {getFurnitureTypes().map((furniture, index) => (
                       <div
                         key={index}
@@ -2059,14 +2139,14 @@ export default function DesignPage() {
                         }`}
                         onClick={() => setSelectedFurnitureType(furniture.name)}
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
                           <span className="text-lg">{furniture.icon}</span>
                           <div>
-                            <div className="text-sm font-medium">{furniture.name}</div>
+                            <div className="text-xs font-medium">{furniture.name}</div>
                             <div className="text-xs text-muted-foreground">{furniture.count}</div>
                           </div>
                         </div>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        <ChevronRight className="h-3 w-3 text-muted-foreground" />
                       </div>
                     ))}
                   </div>
@@ -2483,6 +2563,63 @@ export default function DesignPage() {
             </Button>
             <Button onClick={handleConfirmStyleDesign}>
               确认设计
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 家具尺寸编辑对话框 */}
+      <Dialog open={showDimensionEditDialog} onOpenChange={setShowDimensionEditDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-lg">{editingFurnitureIndex !== null ? keyFurniture[editingFurnitureIndex]?.icon : "📏"}</span>
+              编辑家具尺寸
+            </DialogTitle>
+            <DialogDescription>
+              请设置 {editingFurnitureIndex !== null ? keyFurniture[editingFurnitureIndex]?.name : ""} 的具体尺寸
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="length" className="text-sm font-medium">长度 (cm)</Label>
+                <Input
+                  id="length"
+                  type="number"
+                  value={tempDimensions.length}
+                  onChange={(e) => setTempDimensions(prev => ({ ...prev, length: parseInt(e.target.value) || 0 }))}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="width" className="text-sm font-medium">宽度 (cm)</Label>
+                <Input
+                  id="width"
+                  type="number"
+                  value={tempDimensions.width}
+                  onChange={(e) => setTempDimensions(prev => ({ ...prev, width: parseInt(e.target.value) || 0 }))}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="height" className="text-sm font-medium">高度 (cm)</Label>
+                <Input
+                  id="height"
+                  type="number"
+                  value={tempDimensions.height}
+                  onChange={(e) => setTempDimensions(prev => ({ ...prev, height: parseInt(e.target.value) || 0 }))}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleDimensionCancel}>
+              取消
+            </Button>
+            <Button onClick={handleDimensionSave}>
+              保存
             </Button>
           </DialogFooter>
         </DialogContent>

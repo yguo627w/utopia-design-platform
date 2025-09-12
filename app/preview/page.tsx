@@ -195,11 +195,22 @@ export default function PreviewPage() {
               <Badge variant="outline">预览模式</Badge>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/design">
-                  <Edit className="mr-2 h-4 w-4" />
-                  返回编辑
-                </Link>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  // 保存当前图片到sessionStorage，供design页面恢复使用
+                  const currentImage = renderedImage || previewImage
+                  if (currentImage) {
+                    sessionStorage.setItem("uploadedImage", currentImage)
+                    console.log("[Preview] 保存图片到sessionStorage:", currentImage)
+                  }
+                  // 跳转到design页面
+                  window.location.href = "/design"
+                }}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                返回编辑
               </Button>
               <Button size="sm" className="bg-primary" asChild>
                 <Link href="/marketplace">

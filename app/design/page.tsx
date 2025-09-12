@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useRouter } from "next/navigation"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Navigation from "@/components/navigation"
 import StepIndicator from "@/components/step-indicator"
+import ClientOnly from "@/components/client-only"
 import {
   MessageCircle,
   Send,
@@ -42,7 +43,6 @@ import {
   Plus as PlusIcon,
   X,
 } from "lucide-react"
-import { useState } from "react"
 import { useCart } from "@/hooks/use-cart"
 
 interface ChatMessage {
@@ -74,28 +74,15 @@ interface FamilyMember {
 }
 
 export default function DesignPage() {
+  const [isClient, setIsClient] = useState(false)
+  const [isHydrated, setIsHydrated] = useState(false)
   const [selectedRoom, setSelectedRoom] = useState("客厅")
   const [selectedFurnitureType, setSelectedFurnitureType] = useState("")
   const [zoomLevel, setZoomLevel] = useState(1)
   const [chatImages, setChatImages] = useState<Array<{ id: string; url: string; name: string }>>([])
   const [activeTab, setActiveTab] = useState("inspiration")
-  const [roomImage, setRoomImage] = useState(() => {
-    // 页面加载时立即从sessionStorage读取图片，避免闪烁
-    if (typeof window !== 'undefined') {
-      const uploadedImage = sessionStorage.getItem("uploadedImage")
-      const selectedStyleImage = sessionStorage.getItem("selectedStyleImage")
-      return uploadedImage || selectedStyleImage || "https://design.gemcoder.com/staticResource/echoAiSystemImages/676985223975790e510ca20672144337.png"
-    }
-    return "https://design.gemcoder.com/staticResource/echoAiSystemImages/676985223975790e510ca20672144337.png"
-  })
-  const [originalRoomImage, setOriginalRoomImage] = useState(() => {
-    // 保存原始上传的图片
-    if (typeof window !== 'undefined') {
-      const uploadedImage = sessionStorage.getItem("uploadedImage")
-      return uploadedImage || "https://design.gemcoder.com/staticResource/echoAiSystemImages/676985223975790e510ca20672144337.png"
-    }
-    return "https://design.gemcoder.com/staticResource/echoAiSystemImages/676985223975790e510ca20672144337.png"
-  })
+  const [roomImage, setRoomImage] = useState("https://design.gemcoder.com/staticResource/echoAiSystemImages/676985223975790e510ca20672144337.png")
+  const [originalRoomImage, setOriginalRoomImage] = useState("https://design.gemcoder.com/staticResource/echoAiSystemImages/676985223975790e510ca20672144337.png")
   const [showResetButton, setShowResetButton] = useState(false)
   const [imageHistory, setImageHistory] = useState<string[]>([]) // 图片历史记录
   const [selectedStyleTitle, setSelectedStyleTitle] = useState("")
@@ -290,7 +277,16 @@ export default function DesignPage() {
     setShowToast(true)
   }
 
+  // 设置客户端状态
   useEffect(() => {
+    setIsClient(true)
+    setIsHydrated(true)
+  }, [])
+
+  // 客户端挂载后恢复图片状态
+  useEffect(() => {
+    if (!isClient) return
+    
     const uploadedImage = sessionStorage.getItem("uploadedImage")
     const selectedStyleImage = sessionStorage.getItem("selectedStyleImage")
     const styleTitle = sessionStorage.getItem("selectedStyleTitle")
@@ -300,6 +296,7 @@ export default function DesignPage() {
       // 只有在roomImage不是用户上传的图片时才设置，避免重复设置
       if (roomImage !== uploadedImage) {
         setRoomImage(uploadedImage)
+        setOriginalRoomImage(uploadedImage)
       }
       // 清理所有上传相关的sessionStorage数据
       sessionStorage.removeItem("uploadedImage")
@@ -325,7 +322,28 @@ export default function DesignPage() {
       sessionStorage.removeItem("selectedStyleType")
       console.log("[v0] Loaded selected style and cleaned sessionStorage")
     }
-  }, [])
+  }, [isClient])
+
+  // 监听页面可见性变化，处理从preview页面返回的情况
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // 页面变为可见时，检查是否有新的图片需要恢复
+        const uploadedImage = sessionStorage.getItem("uploadedImage")
+        if (uploadedImage && roomImage !== uploadedImage) {
+          console.log("[Design] 页面重新可见，恢复图片:", uploadedImage)
+          setRoomImage(uploadedImage)
+          sessionStorage.removeItem("uploadedImage")
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [roomImage])
 
   useEffect(() => {
     if (showToast) {
@@ -661,7 +679,9 @@ export default function DesignPage() {
       })
 
       if (!response.ok) {
-        throw new Error(`家具识别失败: ${response.status}`)
+        const errorText = await response.text()
+        console.error("[Furniture Detection] HTTP Error:", response.status, errorText)
+        throw new Error(`家具识别失败: ${response.status} - ${errorText}`)
       }
 
       const result = await response.json()
@@ -678,19 +698,28 @@ export default function DesignPage() {
         }))
         setDetectedFurniture(furnitureWithIcons)
         console.log("[Furniture Detection] Success:", furnitureWithIcons)
-      } else if (result.success === false && retryCount < 2) {
-        // API返回错误，重试
-        console.log("[Furniture Detection] API returned error, retrying...", result.error)
-        console.log("[Furniture Detection] Retry count:", retryCount, "Max retries: 2")
-        setTimeout(() => {
-          detectFurniture(imageUrl, retryCount + 1)
-        }, 2000) // 2秒后重试
-        return
+      } else if (result.success === false) {
+        // API返回错误
+        console.log("[Furniture Detection] API returned error:", result.error, result.details)
+        
+        if (retryCount < 2) {
+          // 重试
+          console.log("[Furniture Detection] Retrying...", retryCount, "Max retries: 2")
+          setTimeout(() => {
+            detectFurniture(imageUrl, retryCount + 1)
+          }, 2000) // 2秒后重试
+          return
+        } else {
+          // 清除超时，达到最大重试次数
+          clearTimeout(timeoutId)
+          setFurnitureDetectionError(true)
+          console.log("[Furniture Detection] Max retries reached. Error:", result.error)
+        }
       } else {
         // 清除超时
         clearTimeout(timeoutId)
         setFurnitureDetectionError(true)
-        console.log("[Furniture Detection] No furniture detected or max retries reached. Result:", result)
+        console.log("[Furniture Detection] No furniture detected. Result:", result)
       }
     } catch (error) {
       console.error("[Furniture Detection] Error:", error)
@@ -2748,7 +2777,7 @@ export default function DesignPage() {
                   style={showResetButton ? { backgroundColor: '#A2BB40' } : {}}
                   disabled={!showResetButton}
                 >
-                  重置
+                  回退
                 </Button>
                 <span className="text-xs text-muted-foreground font-medium hidden sm:inline">缩放</span>
                 <Button size="sm" variant="secondary" onClick={handleZoomIn} className="h-7 w-7 p-0">
@@ -2854,8 +2883,9 @@ export default function DesignPage() {
             <p className="text-xs xl:text-sm text-muted-foreground mt-1">用自然语言描述你的设计需求</p>
           </div>
 
-          <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 xl:p-5 space-y-4 min-h-0 max-h-full">
-            {chatMessages.map((message, index) => (
+          <ClientOnly fallback={<div className="flex-1 overflow-y-auto p-4 xl:p-5 space-y-4 min-h-0 max-h-full flex items-center justify-center"><div className="text-muted-foreground">加载中...</div></div>}>
+            <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 xl:p-5 space-y-4 min-h-0 max-h-full">
+              {chatMessages.map((message, index) => (
               <div key={index} className={`flex gap-3 ${message.type === "user" ? "flex-row-reverse" : ""}`}>
                 {message.type === "ai" && (
                   <Avatar className="h-8 w-8 xl:h-9 xl:w-9 flex-shrink-0">
@@ -2868,6 +2898,7 @@ export default function DesignPage() {
                     className={`max-w-[85%] p-3 xl:p-4 rounded-lg ${
                       message.type === "user" ? "bg-primary text-white" : "bg-muted"
                     }`}
+                    suppressHydrationWarning={true}
                   >
                     <p className="text-sm xl:text-base whitespace-pre-line">{message.content}</p>
                     {message.image && (
@@ -2883,21 +2914,22 @@ export default function DesignPage() {
                   <span className="text-xs text-muted-foreground mt-1">{message.time}</span>
                 </div>
               </div>
-            ))}
-            {isLoading && (
-              <div className="flex gap-3">
-                <Avatar className="h-8 w-8 xl:h-9 xl:w-9 flex-shrink-0">
-                  <AvatarImage src="/woman-designer-avatar.png" />
-                  <AvatarFallback className="bg-primary text-white text-xs">AI</AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col items-start">
-                  <div className="bg-muted p-3 xl:p-4 rounded-lg">
-                    <p className="text-sm xl:text-base">正在生成设计方案...</p>
+              ))}
+              {isLoading && (
+                <div className="flex gap-3">
+                  <Avatar className="h-8 w-8 xl:h-9 xl:w-9 flex-shrink-0">
+                    <AvatarImage src="/woman-designer-avatar.png" />
+                    <AvatarFallback className="bg-primary text-white text-xs">AI</AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col items-start">
+                    <div className="bg-muted p-3 xl:p-4 rounded-lg">
+                      <p className="text-sm xl:text-base">正在生成设计方案...</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          </ClientOnly>
 
           <div className="p-4 xl:p-5 border-t border-border flex-shrink-0">
             {chatImages.length > 0 && (
@@ -3042,7 +3074,7 @@ export default function DesignPage() {
             {referenceImage && (
               <div className="rounded-lg overflow-hidden border">
                 <img
-                  src={referenceImage}
+                  src={referenceImage as string}
                   alt="参考图片"
                   className="w-full h-48 object-cover"
                 />
@@ -3219,7 +3251,7 @@ export default function DesignPage() {
             </DialogTitle>
             <DialogDescription>
               {furnitureRecognitionResult?.success 
-                ? `已识别出你上传的家具为【${furnitureRecognitionResult.furnitureType}】，请确认。`
+                ? `已识别出你上传的家具为【${furnitureRecognitionResult?.furnitureType}】，请确认。`
                 : "没找到完全相同的，我们帮你加到合适的分类吧～"
               }
             </DialogDescription>
@@ -3235,11 +3267,11 @@ export default function DesignPage() {
             </div>
 
             {/* 识别成功：显示相似家具 */}
-            {furnitureRecognitionResult?.success && furnitureRecognitionResult.similarFurniture && furnitureRecognitionResult.similarFurniture.length > 0 && (
+            {furnitureRecognitionResult?.success && furnitureRecognitionResult?.similarFurniture && furnitureRecognitionResult?.similarFurniture?.length > 0 && (
               <div className="space-y-3">
                 <h4 className="font-medium text-sm">相似款推荐：</h4>
                 <div className="grid grid-cols-2 gap-3">
-                  {furnitureRecognitionResult.similarFurniture.map((product, index) => (
+                  {furnitureRecognitionResult?.similarFurniture?.map((product, index) => (
                     <div key={index} className="bg-muted/50 rounded-lg p-3 border">
                       <div className="relative">
                         <img

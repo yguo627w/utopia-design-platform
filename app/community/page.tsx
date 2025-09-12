@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import Navigation from "@/components/navigation"
-import { Search, Heart, MessageCircle, Bookmark, Plus } from "lucide-react"
+import { Search, Heart, MessageCircle, Bookmark, Plus, Hash } from "lucide-react"
 import Link from "next/link"
 
 export default function CommunityPage() {
@@ -133,6 +133,82 @@ export default function CommunityPage() {
 
   const categories = ["最新", "热门", "小户型", "北欧风", "工业风", "日式", "新中式"]
 
+  // 话题数据
+  const topics = [
+    { name: "租房改造避雷", color: "bg-red-100 text-red-700 hover:bg-red-200" },
+    { name: "租房DIY指南", color: "bg-blue-100 text-blue-700 hover:bg-blue-200" },
+    { name: "家是我的能量场", color: "bg-green-100 text-green-700 hover:bg-green-200" },
+    { name: "二手家具交易", color: "bg-purple-100 text-purple-700 hover:bg-purple-200" }
+  ]
+
+  // 置顶消息数据
+  const pinnedMessages = [
+    {
+      type: "求购",
+      furniture: "电视支架",
+      count: 7,
+      users: ["@大淋大淋", "@caoyu19"]
+    },
+    {
+      type: "出售", 
+      furniture: "懒人沙发",
+      count: 13,
+      users: ["@怡璇errr", "@海淀机器人"]
+    }
+  ]
+
+  // 讨论数据
+  const discussions = [
+    {
+      id: 1,
+      user: "北京租房小王",
+      avatar: "/placeholder.svg",
+      topic: "二手家具交易",
+      content: "收一个二手电视支架~北京可以自提",
+      time: "2小时前",
+      likes: 12,
+      comments: 3,
+      type: "求购",
+      location: "北京·海淀区"
+    },
+    {
+      id: 2,
+      user: "海淀家具达人",
+      avatar: "/placeholder.svg", 
+      topic: "二手家具交易",
+      content: "出一个简易鞋柜，能放20双运动鞋，支持海淀自提",
+      time: "4小时前",
+      likes: 28,
+      comments: 15,
+      type: "出售",
+      location: "北京·海淀区"
+    },
+    {
+      id: 3,
+      user: "朝阳改造师",
+      avatar: "/placeholder.svg",
+      topic: "租房改造避雷", 
+      content: "家人们，千万别买隔音棉，真的一点用都没有用，与其这样不如买副耳机…",
+      time: "6小时前",
+      likes: 45,
+      comments: 8,
+      type: "分享",
+      location: "北京·朝阳区"
+    },
+    {
+      id: 4,
+      user: "能量场设计师",
+      avatar: "/placeholder.svg",
+      topic: "家是我的能量场",
+      content: "家里的植物真的能改变心情，推荐几款好养的绿植给大家",
+      time: "8小时前", 
+      likes: 67,
+      comments: 22,
+      type: "分享",
+      location: "北京·朝阳区"
+    }
+  ]
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation currentPage="community" />
@@ -166,65 +242,185 @@ export default function CommunityPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {posts.map((post) => (
-            <Card key={post.id} className="hover-lift cursor-pointer group">
-              <div className="relative overflow-hidden rounded-t-lg">
-                <img
-                  src={post.image || "/placeholder.svg"}
-                  alt={post.title}
-                  className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button size="sm" variant="secondary" className="h-8 w-8 p-0">
-                    <Bookmark className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              <CardContent className="p-4">
-                <h3 className="font-semibold mb-3 group-hover:text-primary transition-colors line-clamp-2">
-                  {post.title}
-                </h3>
-
-                <div className="flex items-center gap-2 mb-3">
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage src={post.avatar || "/placeholder.svg"} />
-                    <AvatarFallback>{post.author[0]}</AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm text-muted-foreground">{post.author}</span>
-                </div>
-
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {post.tags.map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <div className="flex items-center gap-4">
-                    <span className="flex items-center gap-1">
-                      <Heart className="h-4 w-4" />
-                      {post.likes}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MessageCircle className="h-4 w-4" />
-                      {post.comments}
-                    </span>
+        {/* 左右分区布局 */}
+        <div className="flex gap-6">
+          {/* 左侧：灵感图片展示 (2/3) */}
+          <div className="flex-1 w-2/3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {posts.map((post) => (
+                <Card key={post.id} className="hover-lift cursor-pointer group">
+                  <div className="relative overflow-hidden rounded-t-lg">
+                    <img
+                      src={post.image || "/placeholder.svg"}
+                      alt={post.title}
+                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button size="sm" variant="secondary" className="h-8 w-8 p-0">
+                        <Bookmark className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
+
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold mb-3 group-hover:text-primary transition-colors line-clamp-2">
+                      {post.title}
+                    </h3>
+
+                    <div className="flex items-center gap-2 mb-3">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={post.avatar || "/placeholder.svg"} />
+                        <AvatarFallback>{post.author[0]}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm text-muted-foreground">{post.author}</span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {post.tags.map((tag) => (
+                        <Badge key={tag} variant="outline" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <div className="flex items-center gap-4">
+                        <span className="flex items-center gap-1">
+                          <Heart className="h-4 w-4" />
+                          {post.likes}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MessageCircle className="h-4 w-4" />
+                          {post.comments}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            
+            {/* 加载更多按钮 */}
+            <div className="text-center mt-8">
+              <Button variant="outline" size="lg">
+                加载更多
+              </Button>
+            </div>
+          </div>
+
+          {/* 右侧：社区讨论整卡 (1/3) */}
+          <div className="w-1/3">
+            <Card>
+              <CardContent className="p-4">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5 text-primary" />
+                  社区讨论
+                </h3>
+                
+                {/* 置顶消息 */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-medium text-muted-foreground mb-3">置顶消息</h4>
+                  <div className="space-y-3">
+                    {pinnedMessages.map((message, index) => (
+                      <div key={index} className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 border border-blue-200/50">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="text-sm">
+                              {message.type === "求购" ? (
+                                <span className="text-blue-700">
+                                  你想购买的「<span className="font-semibold">{message.furniture}</span>」有<span className="font-semibold text-orange-600">{message.count}</span>人在售：
+                                </span>
+                              ) : (
+                                <span className="text-green-700">
+                                  你想出手的「<span className="font-semibold">{message.furniture}</span>」有<span className="font-semibold text-orange-600">{message.count}</span>人在求购：
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-2 flex items-center gap-2">
+                              <div className="flex flex-wrap gap-1">
+                                {message.users.map((user, userIndex) => (
+                                  <span key={userIndex} className="text-xs bg-white px-2 py-1 rounded-full border border-blue-200 text-blue-600">
+                                    {user}
+                                  </span>
+                                ))}
+                              </div>
+                              <span className="text-xs text-muted-foreground">…</span>
+                            </div>
+                          </div>
+                          <Button size="sm" variant="outline" className="ml-3 text-xs h-7 px-3">
+                            去讨论
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 热门话题 */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-medium text-muted-foreground mb-3">热门话题</h4>
+                  <div className="space-y-2">
+                    {topics.map((topic, index) => (
+                      <div
+                        key={topic.name}
+                        className={`inline-block px-3 py-2 rounded-full text-sm font-medium cursor-pointer transition-colors ${topic.color}`}
+                      >
+                        #{topic.name}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 热区讨论 */}
+                <div>
+                  <h4 className="text-sm font-medium text-muted-foreground mb-3">热区讨论</h4>
+                  <div className="space-y-4">
+                    {discussions.map((discussion) => (
+                      <div key={discussion.id} className="border-b border-border/50 pb-4 last:border-b-0">
+                        {/* 第一行：用户头像、用户昵称、发布时间 */}
+                        <div className="flex items-center gap-2 mb-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={discussion.avatar} />
+                            <AvatarFallback>{discussion.user[0]}</AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm font-medium">{discussion.user}</span>
+                          <span className="text-xs text-muted-foreground">{discussion.time}</span>
+                        </div>
+                        
+                        {/* 第二行：内容文案 */}
+                        <p className="text-sm text-foreground mb-2 line-clamp-2">
+                          {discussion.content}
+                        </p>
+                        
+                        {/* 第三行：标签信息 */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {discussion.type === "求购" && (
+                            <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-200 text-xs">
+                              附近的人求购中
+                            </Badge>
+                          )}
+                          {discussion.type === "出售" && (
+                            <Badge className="bg-green-100 text-green-700 hover:bg-green-200 text-xs">
+                              附近的人正在卖
+                            </Badge>
+                          )}
+                          <Badge variant="outline" className="text-xs">
+                            #{discussion.topic}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
+                            📌{discussion.location}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <Button variant="outline" size="sm" className="w-full mt-4">
+                    查看更多讨论
+                  </Button>
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
-
-        {/* Load More */}
-        <div className="text-center mt-12">
-          <Button variant="outline" size="lg">
-            加载更多
-          </Button>
+          </div>
         </div>
       </div>
 

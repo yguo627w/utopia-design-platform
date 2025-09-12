@@ -88,6 +88,16 @@ export default function DesignPage() {
     }
     return "https://design.gemcoder.com/staticResource/echoAiSystemImages/676985223975790e510ca20672144337.png"
   })
+  const [originalRoomImage, setOriginalRoomImage] = useState(() => {
+    // 保存原始上传的图片
+    if (typeof window !== 'undefined') {
+      const uploadedImage = sessionStorage.getItem("uploadedImage")
+      return uploadedImage || "https://design.gemcoder.com/staticResource/echoAiSystemImages/676985223975790e510ca20672144337.png"
+    }
+    return "https://design.gemcoder.com/staticResource/echoAiSystemImages/676985223975790e510ca20672144337.png"
+  })
+  const [showResetButton, setShowResetButton] = useState(false)
+  const [imageHistory, setImageHistory] = useState<string[]>([]) // 图片历史记录
   const [selectedStyleTitle, setSelectedStyleTitle] = useState("")
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState("")
@@ -1048,7 +1058,9 @@ export default function DesignPage() {
 
       const result = await response.json()
       if (result.success && result.imageUrl) {
+        saveImageToHistory() // 保存当前图片到历史记录
         setRoomImage(result.imageUrl)
+        setShowResetButton(true) // 显示重置按钮
         setToastMessage(`已将房间中的${furnitureType}替换为选中的${productName}`)
         setShowToast(true)
       } else {
@@ -1227,6 +1239,37 @@ export default function DesignPage() {
 
   const handleZoomOut = () => {
     setZoomLevel((prev) => Math.max(prev - 0.2, 0.5))
+  }
+
+  // 保存当前图片到历史记录
+  const saveImageToHistory = () => {
+    setImageHistory(prev => [...prev, roomImage])
+    console.log("[Image History] Saved current image to history:", roomImage)
+  }
+
+  // 重置图片到上一次修改前的状态
+  const handleResetImage = () => {
+    if (imageHistory.length > 0) {
+      // 恢复到上一次修改前的图片
+      const previousImage = imageHistory[imageHistory.length - 1]
+      setRoomImage(previousImage)
+      // 移除当前历史记录
+      setImageHistory(prev => prev.slice(0, -1))
+      console.log("[Image History] Reset to previous image:", previousImage)
+      // 如果历史记录为空，隐藏重置按钮
+      if (imageHistory.length === 1) {
+        setShowResetButton(false)
+      }
+    } else {
+      // 如果没有历史记录，恢复到原始图片
+      setRoomImage(originalRoomImage)
+      setShowResetButton(false)
+      console.log("[Image History] No history, reset to original image:", originalRoomImage)
+    }
+    // 清除sessionStorage中的修改后图片
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem("selectedStyleImage")
+    }
   }
 
   const handleFurnitureClick = (furnitureName: string) => {
@@ -1477,7 +1520,9 @@ export default function DesignPage() {
       setChatMessages((prev) => [...prev, aiMessage])
 
       // Update the room image with the generated result
+      saveImageToHistory() // 保存当前图片到历史记录
       setRoomImage(generatedImageUrl)
+      setShowResetButton(true) // 显示重置按钮
     } catch (error) {
       console.error("[v0] Error in handleSendMessage:", error)
 
@@ -1646,7 +1691,9 @@ export default function DesignPage() {
 
       if (result.imageUrl) {
         // 更新房间图片
+        saveImageToHistory() // 保存当前图片到历史记录
         setRoomImage(result.imageUrl)
+        setShowResetButton(true) // 显示重置按钮
         
         // 关闭弹窗
         setShowMbtiTestDialog(false)
@@ -1861,7 +1908,9 @@ export default function DesignPage() {
       const generatedImageUrl = await callImageGenerationAPI(prompt, targetImageUrl)
       
       // 更新房间图片
+      saveImageToHistory() // 保存当前图片到历史记录
       setRoomImage(generatedImageUrl)
+      setShowResetButton(true) // 显示重置按钮
       
       // 添加AI消息到对话
       const aiMessage: ChatMessage = {
@@ -1972,7 +2021,9 @@ export default function DesignPage() {
       const generatedImageUrl = await callImageGenerationAPI(prompt, targetImageUrl)
       
       // 更新房间图片
+      saveImageToHistory() // 保存当前图片到历史记录
       setRoomImage(generatedImageUrl)
+      setShowResetButton(true) // 显示重置按钮
       
       // 添加AI消息到对话
       const aiMessage: ChatMessage = {
@@ -2019,12 +2070,12 @@ export default function DesignPage() {
           <div className="flex items-center gap-4">
             <h1 className="text-lg font-semibold">设计工作台</h1>
             <Badge variant="outline">编辑模式</Badge>
-          </div>
-
-          <div className="flex gap-3">
             <Button variant="outline" size="sm" className="text-sm bg-transparent">
               协作模式
             </Button>
+          </div>
+
+          <div className="flex gap-3">
             <Button
               size="sm"
               className="text-sm font-semibold bg-primary hover:bg-primary/90"
@@ -2230,7 +2281,7 @@ export default function DesignPage() {
                       {styleDesignLoading ? (
                         <>
                           <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                          AI智能设计中，正在为您的小家打造温暖角落，请稍后
+                          AI智能设计中
                         </>
                       ) : (
                         <>
@@ -2564,8 +2615,18 @@ export default function DesignPage() {
           <div className="flex-1 bg-gradient-to-br from-muted/20 to-background overflow-hidden h-full">
             {/* 顶部工具栏区域 */}
             <div className="absolute top-4 left-4 z-10 flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-              {/* 缩放控制 */}
+              {/* 重置和缩放控制 */}
               <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg flex items-center gap-2">
+                <Button 
+                  size="sm" 
+                  variant="secondary" 
+                  onClick={handleResetImage} 
+                  className={`text-xs px-2 ${showResetButton ? 'text-white hover:opacity-90' : 'opacity-50 cursor-not-allowed'}`}
+                  style={showResetButton ? { backgroundColor: '#A2BB40' } : {}}
+                  disabled={!showResetButton}
+                >
+                  重置
+                </Button>
                 <span className="text-xs text-muted-foreground font-medium hidden sm:inline">缩放</span>
                 <Button size="sm" variant="secondary" onClick={handleZoomIn} className="h-7 w-7 p-0">
                   <ZoomIn className="h-3 w-3" />

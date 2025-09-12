@@ -2188,7 +2188,9 @@ export default function DesignPage() {
         <div className="max-w-7xl mx-auto flex justify-between items-center gap-3">
           <div className="flex items-center gap-4">
             <h1 className="text-lg font-semibold">设计工作台</h1>
-            <Badge variant="outline">编辑模式</Badge>
+            <Button variant="outline" size="sm" className="text-sm bg-transparent">
+              编辑模式
+            </Button>
             <Button variant="outline" size="sm" className="text-sm bg-transparent">
               协作模式
             </Button>

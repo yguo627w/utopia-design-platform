@@ -6,7 +6,7 @@ export interface CartItem {
   price: number
   image: string
   quantity: number
-  source: 'design' | 'marketplace'
+  source: 'design' | 'marketplace' | 'smart-recognition'
   addedAt: number
 }
 
@@ -73,8 +73,10 @@ export const useCart = () => {
       // 按添加时间排序
       updatedCart.sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0))
 
-      // 保存到localStorage（只保存design来源的商品）
-      const sharedItems = updatedCart.filter(cartItem => cartItem.source === "design")
+      // 保存到localStorage（保存design和smart-recognition来源的商品）
+      const sharedItems = updatedCart.filter(cartItem => 
+        cartItem.source === "design" || cartItem.source === "smart-recognition"
+      )
       localStorage.setItem("sharedCart", JSON.stringify(sharedItems))
 
       // 触发自定义事件通知其他组件购物车已更新
@@ -114,8 +116,10 @@ export const useCart = () => {
         )
       }
 
-      // 保存到localStorage（只保存design来源的商品）
-      const sharedItems = updatedCart.filter(item => item.source === "design")
+      // 保存到localStorage（保存design和smart-recognition来源的商品）
+      const sharedItems = updatedCart.filter(item => 
+        item.source === "design" || item.source === "smart-recognition"
+      )
       localStorage.setItem("sharedCart", JSON.stringify(sharedItems))
 
       // 触发自定义事件通知其他组件购物车已更新
@@ -136,8 +140,10 @@ export const useCart = () => {
     setCartItems(prevCart => {
       const updatedCart = prevCart.filter(item => item.id !== id)
       
-      // 保存到localStorage（只保存design来源的商品）
-      const sharedItems = updatedCart.filter(item => item.source === "design")
+      // 保存到localStorage（保存design和smart-recognition来源的商品）
+      const sharedItems = updatedCart.filter(item => 
+        item.source === "design" || item.source === "smart-recognition"
+      )
       localStorage.setItem("sharedCart", JSON.stringify(sharedItems))
 
       // 触发自定义事件通知其他组件购物车已更新
@@ -180,7 +186,7 @@ export const useCart = () => {
   }, [cartItems])
 
   // 获取指定来源的商品
-  const getItemsBySource = useCallback((source: 'design' | 'marketplace') => {
+  const getItemsBySource = useCallback((source: 'design' | 'marketplace' | 'smart-recognition') => {
     return cartItems.filter(item => item.source === source)
   }, [cartItems])
 

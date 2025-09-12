@@ -117,9 +117,13 @@ export default function DesignPage() {
   const [furnitureRecognitionDialog, setFurnitureRecognitionDialog] = useState(false)
   const [furnitureRecognitionResult, setFurnitureRecognitionResult] = useState<{
     success: boolean
-    furnitureType?: string
-    similarProducts?: Array<{ id: string; name: string; image: string; price: string }>
+    furnitureType: string
     originalImage: string
+    similarFurniture: Array<{
+      name: string
+      price: number
+      image_url: string
+    }>
   } | null>(null)
   const [showCustomFurnitureForm, setShowCustomFurnitureForm] = useState(false)
   const [customFurnitureData, setCustomFurnitureData] = useState({
@@ -1102,67 +1106,101 @@ export default function DesignPage() {
         return
       }
 
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const imageUrl = e.target?.result as string
-        setShowFurnitureUploadDialog(false)
-        
-        // 开始AI识别过程
-        handleFurnitureRecognition(imageUrl)
+      // 先上传到云端，然后调用家具查询接口
+      handleFurnitureUploadToCloud(file)
+    }
+  }
+
+  // 上传家具图片到云端
+  const handleFurnitureUploadToCloud = async (file: File) => {
+    setFurnitureRecognitionLoading(true)
+    setShowFurnitureUploadDialog(false)
+    
+    try {
+      // 创建FormData
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      console.log("[Furniture Upload] Uploading to cloud:", file.name)
+      
+      // 调用upload接口上传到云端
+      const uploadResponse = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!uploadResponse.ok) {
+        throw new Error(`图片上传失败: ${uploadResponse.status}`)
       }
-      reader.onerror = () => {
-        setToastMessage(`读取文件失败：${file.name}`)
-        setShowToast(true)
+
+      const uploadResult = await uploadResponse.json()
+      console.log("[Furniture Upload] Upload result:", uploadResult)
+
+      if (uploadResult.success && uploadResult.imageUrl) {
+        // 上传成功，使用云端URL调用家具查询接口
+        await handleFurnitureRecognition(uploadResult.imageUrl)
+      } else {
+        throw new Error(uploadResult.error || "图片上传失败")
       }
-      reader.readAsDataURL(file)
+    } catch (error) {
+      console.error("[Furniture Upload] Error:", error)
+      setToastMessage("图片上传失败，请重试")
+      setShowToast(true)
+      setFurnitureRecognitionLoading(false)
     }
   }
 
   const handleFurnitureRecognition = async (imageUrl: string) => {
-    setFurnitureRecognitionLoading(true)
-    
     try {
-      // 模拟AI识别过程（实际项目中这里应该调用真实的AI识别API）
-      await new Promise(resolve => setTimeout(resolve, 3000))
-      
-      // 模拟识别结果（实际项目中这里应该是AI返回的真实结果）
-      // 默认识别成功，显示花瓶识别结果
-      const isSuccess = true // 改为true，确保每次都识别成功
-      
-      if (isSuccess) {
-        // 识别成功
-        const mockResult = {
+      // 调用家具查询接口
+      const response = await fetch('/api/search-furniture', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image_url: imageUrl
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`家具查询接口调用失败: ${response.status}`)
+      }
+
+      const result = await response.json()
+      console.log("[Furniture Recognition] API result:", result)
+
+      if (result.success && result.data) {
+        // 解析API返回的数据
+        const furnitureData = result.data
+        
+        // 构建识别结果
+        const recognitionResult = {
           success: true,
-          furnitureType: "花瓶",
-          similarProducts: [
-            {
-              id: "similar1",
-              name: "现代简约花瓶",
-              image: "https://b.bdstatic.com/searchbox/image/gcp/20250831/1497934224.jpg",
-              price: "¥99"
-            },
-            {
-              id: "similar2",
-              name: "北欧风花瓶",
-              image: "https://b.bdstatic.com/searchbox/image/gcp/20250831/3258317815.webp",
-              price: "¥79"
-            }
-          ],
-          originalImage: imageUrl
+          furnitureType: furnitureData.type || "未知分类",
+          originalImage: imageUrl,
+          similarFurniture: furnitureData.results ? furnitureData.results.slice(0, 2).map((item: any) => ({
+            name: item.name || "未知家具",
+            price: parseInt(item.price) || 0,
+            image_url: item.image_url || "/placeholder.svg"
+          })) : []
         }
-        setFurnitureRecognitionResult(mockResult)
+        
+        setFurnitureRecognitionResult(recognitionResult)
         setFurnitureRecognitionDialog(true)
       } else {
-        // 识别失败
-        const mockResult = {
+        // 识别失败，显示自定义家具表单
+        const recognitionResult = {
           success: false,
-          originalImage: imageUrl
+          furnitureType: "未知分类",
+          originalImage: imageUrl,
+          similarFurniture: []
         }
-        setFurnitureRecognitionResult(mockResult)
+        setFurnitureRecognitionResult(recognitionResult)
         setFurnitureRecognitionDialog(true)
       }
     } catch (error) {
-      console.error("家具识别失败:", error)
+      console.error("[Furniture Recognition] Error:", error)
       setToastMessage("家具识别失败，请重试")
       setShowToast(true)
     } finally {
@@ -1177,10 +1215,10 @@ export default function DesignPage() {
       return
     }
     
-    if (furnitureRecognitionResult?.similarProducts) {
+    if (furnitureRecognitionResult?.similarFurniture) {
       // 获取选中的相似家具
-      const selectedProducts = furnitureRecognitionResult.similarProducts.filter(
-        product => selectedSimilarFurniture.includes(product.id)
+      const selectedProducts = furnitureRecognitionResult.similarFurniture.filter(
+        (product: any, index: number) => selectedSimilarFurniture.includes(`similar-${index}`)
       )
       
       // 这里可以添加逻辑来将选中的相似家具添加到对应分类
@@ -1732,6 +1770,56 @@ export default function DesignPage() {
     setShowSmartRecognitionDialog(true)
   }
 
+  // 获取云端图片URL
+  const getCloudImageUrl = async (imageUrl: string): Promise<string> => {
+    // 如果已经是HTTP URL，直接使用
+    if (imageUrl.startsWith('http')) {
+      console.log("[Smart Recognition] Using existing HTTP URL:", imageUrl)
+      return imageUrl
+    }
+    
+    // 如果是data URL，需要上传到云端
+    if (imageUrl.startsWith('data:')) {
+      try {
+        console.log("[Smart Recognition] Converting data URL to cloud URL")
+        
+        // 将data URL转换为blob
+        const response = await fetch(imageUrl)
+        const blob = await response.blob()
+        const file = new File([blob], 'room-image.jpg', { type: blob.type })
+
+        // 创建FormData
+        const formData = new FormData()
+        formData.append('file', file)
+        
+        // 调用upload接口上传到云端
+        const uploadResponse = await fetch('/api/upload-image', {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!uploadResponse.ok) {
+          throw new Error(`图片上传失败: ${uploadResponse.status}`)
+        }
+
+        const uploadResult = await uploadResponse.json()
+        console.log("[Smart Recognition] Upload result:", uploadResult)
+
+        if (uploadResult.success && uploadResult.imageUrl) {
+          return uploadResult.imageUrl
+        } else {
+          throw new Error(uploadResult.error || "图片上传失败")
+        }
+      } catch (error: any) {
+        console.error("[Smart Recognition] Upload error:", error)
+        throw new Error(`图片上传失败: ${error.message}`)
+      }
+    }
+    
+    // 其他格式不支持
+    throw new Error("不支持的图片格式")
+  }
+
   const handleSmartRecognitionStart = async () => {
     if (!roomImage) {
       console.error("[Smart Recognition] No room image available")
@@ -1744,41 +1832,45 @@ export default function DesignPage() {
     try {
       console.log("[Smart Recognition] Starting furniture recognition for:", roomImage)
       
-      const response = await fetch("/api/detect-furniture", {
+      // 获取云端图片URL（如果已经是URL则直接使用，否则上传到云端）
+      const cloudImageUrl = await getCloudImageUrl(roomImage)
+      
+      // 使用云端URL查询家居库数据
+      const response = await fetch("/api/search-furniture", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          image_url: roomImage,
-          type: "furniture"
+          image_url: cloudImageUrl
         }),
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Furniture detection failed")
+        throw new Error(`家具查询接口调用失败: ${response.status}`)
       }
 
       const result = await response.json()
-      console.log("[Smart Recognition] Detection result:", result)
+      console.log("[Smart Recognition] Furniture search result:", result)
 
-      if (result.success && result.furnitureNames && result.furnitureNames.length > 0) {
-        // 模拟商品匹配（实际项目中应该调用商品匹配API）
-        const matchedFurniture = result.furnitureNames.map((furnitureName: string) => ({
-          name: furnitureName,
-          icon: furnitureIconMap[furnitureName] || "🪑",
-          price: Math.floor(Math.random() * 5000) + 500, // 模拟价格
-          image: "/placeholder.svg", // 模拟商品图片
-          description: `${furnitureName} - 高品质家具`
+      if (result.success && result.data && result.data.results && result.data.results.length > 0) {
+        // 取前3个家具结果
+        const furnitureResults = result.data.results.slice(0, 3)
+        
+        const matchedFurniture = furnitureResults.map((item: any) => ({
+          name: item.name || "未知家具",
+          icon: furnitureIconMap[item.name] || "🪑",
+          price: parseInt(item.price) || 0,
+          image: item.image_url || "/placeholder.svg",
+          description: `${item.name} - 高品质家具`
         }))
 
         setRecognizedFurniture(matchedFurniture)
         setShowRecognitionResultDialog(true)
       } else {
-        throw new Error("No furniture detected")
+        throw new Error("No furniture found in database")
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("[Smart Recognition] Error:", error)
       // 显示错误提示弹窗
       setShowRecognitionResultDialog(true)
@@ -1787,7 +1879,7 @@ export default function DesignPage() {
         icon: "❌",
         price: 0,
         image: "/placeholder.svg",
-        description: "未能识别到家具，请确保图片中有清晰的家具"
+        description: error.message || "未能识别到家具，请确保图片中有清晰的家具"
       }])
     } finally {
       setSmartRecognitionLoading(false)
@@ -1801,15 +1893,42 @@ export default function DesignPage() {
   }
 
   const handleSmartAddToCart = (furniture: any) => {
-    // 这里应该调用购物车API
     console.log("[Smart Recognition] Adding to cart:", furniture)
-    // 可以添加成功提示
+    
+    // 生成唯一的商品ID（基于家具名称和价格）
+    const productId = Date.now() + Math.random() * 1000
+    
+    // 调用现有的购物车添加函数
+    addToCart({
+      id: productId,
+      name: furniture.name,
+      price: furniture.price,
+      image: furniture.image,
+      quantity: 1,
+      source: "smart-recognition" as const,
+    })
+    
+    // 显示成功提示
+    setToastMessage(`已将 ${furniture.name} 加入购物车`)
+    setShowToast(true)
   }
 
   const handleSmartAddAllToCart = () => {
+    if (recognizedFurniture.length === 0) {
+      setToastMessage("没有可添加的家具")
+      setShowToast(true)
+      return
+    }
+    
     recognizedFurniture.forEach(furniture => {
       handleSmartAddToCart(furniture)
     })
+    
+    // 显示成功提示
+    setToastMessage(`已将 ${recognizedFurniture.length} 件家具加入购物车`)
+    setShowToast(true)
+    
+    // 关闭对话框并清空数据
     setShowRecognitionResultDialog(false)
     setRecognizedFurniture([])
   }
@@ -3114,28 +3233,28 @@ export default function DesignPage() {
             </div>
 
             {/* 识别成功：显示相似家具 */}
-            {furnitureRecognitionResult?.success && furnitureRecognitionResult.similarProducts && (
+            {furnitureRecognitionResult?.success && furnitureRecognitionResult.similarFurniture && furnitureRecognitionResult.similarFurniture.length > 0 && (
               <div className="space-y-3">
                 <h4 className="font-medium text-sm">相似款推荐：</h4>
                 <div className="grid grid-cols-2 gap-3">
-                  {furnitureRecognitionResult.similarProducts.map((product) => (
-                    <div key={product.id} className="bg-muted/50 rounded-lg p-3 border">
+                  {furnitureRecognitionResult.similarFurniture.map((product, index) => (
+                    <div key={index} className="bg-muted/50 rounded-lg p-3 border">
                       <div className="relative">
                         <img
-                          src={product.image || "/placeholder.svg"}
+                          src={product.image_url || "/placeholder.svg"}
                           alt={product.name}
                           className="w-full h-24 object-cover rounded mb-2"
                         />
                         {/* 勾选框放在图片右上角 */}
                         <div className="absolute top-1 right-1">
                           <Checkbox
-                            id={product.id}
-                            checked={selectedSimilarFurniture.includes(product.id)}
+                            id={`similar-${index}`}
+                            checked={selectedSimilarFurniture.includes(`similar-${index}`)}
                             onCheckedChange={(checked) => {
                               if (checked) {
-                                setSelectedSimilarFurniture(prev => [...prev, product.id])
+                                setSelectedSimilarFurniture(prev => [...prev, `similar-${index}`])
                               } else {
-                                setSelectedSimilarFurniture(prev => prev.filter(id => id !== product.id))
+                                setSelectedSimilarFurniture(prev => prev.filter(id => id !== `similar-${index}`))
                               }
                             }}
                             className="bg-white/90 border-2 border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
@@ -3148,7 +3267,7 @@ export default function DesignPage() {
                       </div>
                       <div className="text-center">
                         <p className="text-xs font-medium">{product.name}</p>
-                        <p className="text-xs text-primary font-semibold">{product.price}</p>
+                        <p className="text-xs text-primary font-semibold">¥{product.price}</p>
                       </div>
                     </div>
                   ))}

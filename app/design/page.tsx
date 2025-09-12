@@ -2360,23 +2360,25 @@ export default function DesignPage() {
                 </>
               )}
 
-              {/* MBTI测试模块 */}
-              <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg p-4 border border-purple-200/50">
-                <div className="text-center mb-4">
-                  <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-full p-3 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
-                    <span className="text-white text-2xl">🎁</span>
+              {/* MBTI测试模块 - 只在主页面显示，不在风格详情页面显示 */}
+              {!showStyleDetail && (
+                <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg p-4 border border-purple-200/50">
+                  <div className="text-center mb-4">
+                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-full p-3 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                      <span className="text-white text-2xl">🎁</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-purple-700 mb-1">盲盒玩法</h3>
+                    <h4 className="text-lg font-semibold text-purple-600 mb-2">测一测你的MBTI最适合哪个家装风格</h4>
+                    <p className="text-sm text-purple-500">发现最适合你的乌托邦风格</p>
                   </div>
-                  <h3 className="text-xl font-bold text-purple-700 mb-1">盲盒玩法</h3>
-                  <h4 className="text-lg font-semibold text-purple-600 mb-2">测一测你的MBTI最适合哪个家装风格</h4>
-                  <p className="text-sm text-purple-500">发现最适合你的乌托邦风格</p>
+                  <Button 
+                    onClick={handleMbtiTestOpen}
+                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
+                  >
+                    🎯 开始测试
+                  </Button>
                 </div>
-                <Button 
-                  onClick={handleMbtiTestOpen}
-                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
-                >
-                  🎯 开始测试
-                </Button>
-              </div>
+              )}
             </TabsContent>
 
             <TabsContent value="furniture" className="p-4 flex-1 overflow-y-auto">

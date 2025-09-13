@@ -138,6 +138,12 @@ export default function DesignPage() {
   const [furnitureDetectionError, setFurnitureDetectionError] = useState(false)
   const [furnitureDetectionTriggered, setFurnitureDetectionTriggered] = useState(false)
   
+  // 新增场景分析相关状态
+  const [sceneAnalysisLoading, setSceneAnalysisLoading] = useState(false)
+  const [sceneAnalysisResult, setSceneAnalysisResult] = useState<string>("")
+  const [sceneAnalysisError, setSceneAnalysisError] = useState(false)
+  const [sceneAnalysisTriggered, setSceneAnalysisTriggered] = useState(false)
+  
   // 家具尺寸编辑相关状态
   const [showDimensionEditDialog, setShowDimensionEditDialog] = useState(false)
   const [editingFurnitureIndex, setEditingFurnitureIndex] = useState<number | null>(null)
@@ -178,17 +184,21 @@ export default function DesignPage() {
   // 房间中的家具区域引用
   const furnitureInfoRef = useRef<HTMLDivElement>(null)
   
-  // 监听roomImage变化，触发家具识别
+  // 监听roomImage变化，触发家具识别和场景分析
   useEffect(() => {
-    console.log("[Furniture Detection] useEffect triggered, roomImage:", roomImage)
-    console.log("[Furniture Detection] Current state:", {
+    console.log("[Analysis] useEffect triggered, roomImage:", roomImage)
+    console.log("[Analysis] Current state:", {
       detectedFurniture: detectedFurniture.length,
       furnitureDetectionLoading,
       furnitureDetectionError,
-      furnitureDetectionTriggered
+      furnitureDetectionTriggered,
+      sceneAnalysisResult,
+      sceneAnalysisLoading,
+      sceneAnalysisError,
+      sceneAnalysisTriggered
     })
     
-    // 只有云端URL才触发家具识别，排除blob地址和本地地址
+    // 只有云端URL才触发分析，排除blob地址和本地地址
     const isCloudUrl = roomImage && 
                       roomImage !== "/placeholder.svg" && 
                       !roomImage.includes("design.gemcoder.com") &&
@@ -197,18 +207,18 @@ export default function DesignPage() {
                       !roomImage.includes("localhost") &&
                       (roomImage.startsWith("http://") || roomImage.startsWith("https://"))
     
-    console.log("[Furniture Detection] isCloudUrl:", isCloudUrl)
+    console.log("[Analysis] isCloudUrl:", isCloudUrl)
     
     if (isCloudUrl &&
         detectedFurniture.length === 0 && 
         !furnitureDetectionLoading &&
         !furnitureDetectionError &&
         !furnitureDetectionTriggered) {
-      console.log("[Furniture Detection] Triggering detection for cloud URL:", roomImage)
+      console.log("[Analysis] Triggering furniture detection for cloud URL:", roomImage)
       setFurnitureDetectionTriggered(true)
       detectFurniture(roomImage)
     } else {
-      console.log("[Furniture Detection] Not triggering detection, conditions:", {
+      console.log("[Analysis] Not triggering furniture detection, conditions:", {
         isCloudUrl,
         detectedFurnitureLength: detectedFurniture.length,
         furnitureDetectionLoading,
@@ -216,7 +226,26 @@ export default function DesignPage() {
         furnitureDetectionTriggered
       })
     }
-  }, [roomImage, detectedFurniture.length, furnitureDetectionLoading, furnitureDetectionError, furnitureDetectionTriggered])
+    
+    // 同时触发场景分析
+    if (isCloudUrl &&
+        !sceneAnalysisResult &&
+        !sceneAnalysisLoading &&
+        !sceneAnalysisError &&
+        !sceneAnalysisTriggered) {
+      console.log("[Analysis] Triggering scene analysis for cloud URL:", roomImage)
+      setSceneAnalysisTriggered(true)
+      analyzeScene(roomImage)
+    } else {
+      console.log("[Analysis] Not triggering scene analysis, conditions:", {
+        isCloudUrl,
+        sceneAnalysisResult,
+        sceneAnalysisLoading,
+        sceneAnalysisError,
+        sceneAnalysisTriggered
+      })
+    }
+  }, [roomImage, detectedFurniture.length, furnitureDetectionLoading, furnitureDetectionError, furnitureDetectionTriggered, sceneAnalysisResult, sceneAnalysisLoading, sceneAnalysisError, sceneAnalysisTriggered])
   
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
@@ -226,19 +255,104 @@ export default function DesignPage() {
       avatar: "/woman-designer-avatar.png",
       time: "09:30",
     },
-    {
-      type: "user",
-      content: "我想要这个卧室改成现代简约风格，主色调要灰色和白色，需要一个大衣柜",
-      time: "09:32",
-    },
-    {
-      type: "ai",
-      content:
-        "根据你的需求，我为你设计了现代简约风格方案，主色调为：\n\n• 灰色系三人沙发，搭配蓝色靠垫\n• 白色墙体和天花，带来通透感\n• 墙面可用浅灰色乳胶漆，营造层次感\n• 暖色立体设计简约书架，提供储物空间",
-      avatar: "/woman-designer-avatar.png",
-      time: "09:35",
-    },
   ])
+  
+  // 监听分析结果，添加AI助手消息
+  useEffect(() => {
+    // 检查是否已经添加了第二句消息
+    const hasSecondMessage = chatMessages.some(msg => 
+      msg.content.includes("已识别出你上传的房间照片")
+    )
+    
+    // 检查是否已经添加了家具分析消息
+    const hasFurnitureMessage = chatMessages.some(msg => 
+      msg.content.includes("【家具分析】")
+    )
+    
+    // 检查是否已经添加了场景分析消息
+    const hasSceneMessage = chatMessages.some(msg => 
+      msg.content.includes("【场景分析】")
+    )
+    
+    // 如果图片已上传，添加第二句消息
+    if (roomImage && 
+        roomImage !== "/placeholder.svg" && 
+        !roomImage.includes("design.gemcoder.com") &&
+        !roomImage.startsWith("blob:") &&
+        !roomImage.startsWith("data:") &&
+        !roomImage.includes("localhost") &&
+        (roomImage.startsWith("http://") || roomImage.startsWith("https://")) &&
+        !hasSecondMessage) {
+      
+      console.log("[AI Assistant] Adding second message")
+      
+      const currentTime = new Date().toLocaleTimeString("zh-CN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+      
+      const secondMessage: ChatMessage = {
+        type: "ai",
+        content: "已识别出你上传的房间照片，让我为你进行房间场景分析",
+        avatar: "/woman-designer-avatar.png",
+        time: currentTime,
+      }
+      
+      setChatMessages(prev => [...prev, secondMessage])
+    }
+  }, [roomImage, chatMessages])
+  
+  // 监听家具识别结果，添加家具分析消息
+  useEffect(() => {
+    const hasFurnitureMessage = chatMessages.some(msg => 
+      msg.content.includes("【家具分析】")
+    )
+    
+    if (detectedFurniture.length > 0 && !hasFurnitureMessage && !furnitureDetectionLoading) {
+      console.log("[AI Assistant] Adding furniture analysis message")
+      
+      const currentTime = new Date().toLocaleTimeString("zh-CN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+      
+      const furnitureNames = detectedFurniture.map(f => f.name).join("、")
+      const furnitureMessage: ChatMessage = {
+        type: "ai",
+        content: `【家具分析】：已为你分析出当前房间中的关键家具信息为：${furnitureNames}，你可以结合当前场景的关键家具进行设计改造`,
+        avatar: "/woman-designer-avatar.png",
+        time: currentTime,
+      }
+      
+      setChatMessages(prev => [...prev, furnitureMessage])
+    }
+  }, [detectedFurniture, furnitureDetectionLoading, chatMessages])
+  
+  // 监听场景分析结果，添加场景分析消息
+  useEffect(() => {
+    const hasSceneMessage = chatMessages.some(msg => 
+      msg.content.includes("【场景分析】")
+    )
+    
+    if (sceneAnalysisResult && !hasSceneMessage && !sceneAnalysisLoading) {
+      console.log("[AI Assistant] Adding scene analysis message")
+      
+      const currentTime = new Date().toLocaleTimeString("zh-CN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+      
+      const sceneMessage: ChatMessage = {
+        type: "ai",
+        content: `【场景分析】：${sceneAnalysisResult}`,
+        avatar: "/woman-designer-avatar.png",
+        time: currentTime,
+      }
+      
+      setChatMessages(prev => [...prev, sceneMessage])
+    }
+  }, [sceneAnalysisResult, sceneAnalysisLoading, chatMessages])
+  
   const [inputMessage, setInputMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   // 新增状态：一键替换loading和对话式设计loading
@@ -782,6 +896,104 @@ export default function DesignPage() {
     }
   }
 
+  // 场景分析函数
+  const analyzeScene = async (imageUrl: string, retryCount = 0) => {
+    console.log("[Scene Analysis] ===== STARTING SCENE ANALYSIS =====")
+    console.log("[Scene Analysis] Image URL:", imageUrl)
+    console.log("[Scene Analysis] Retry count:", retryCount)
+    console.log("[Scene Analysis] Current state before:", {
+      sceneAnalysisLoading,
+      sceneAnalysisResult,
+      sceneAnalysisError
+    })
+    
+    // 设置超时机制，防止无限重试
+    const timeoutId = setTimeout(() => {
+      console.log("[Scene Analysis] Timeout reached, stopping retries")
+      setSceneAnalysisLoading(false)
+      setSceneAnalysisError(true)
+    }, 30000) // 30秒超时
+    
+    setSceneAnalysisLoading(true)
+    setSceneAnalysisError(false)
+    setSceneAnalysisTriggered(true) // 标记已触发分析
+    
+    console.log("[Scene Analysis] Starting analysis for:", imageUrl)
+    
+    try {
+      const requestBody = {
+        image_url: imageUrl,
+      }
+      
+      console.log("[Scene Analysis] Sending request:", requestBody)
+      
+      const response = await fetch('/api/scene-analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error("[Scene Analysis] HTTP Error:", response.status, errorText)
+        throw new Error(`场景分析失败: ${response.status} - ${errorText}`)
+      }
+
+      const result = await response.json()
+      console.log("[Scene Analysis] API Response:", result)
+      
+      if (result.success && result.content) {
+        // 清除超时
+        clearTimeout(timeoutId)
+        setSceneAnalysisResult(result.content)
+        console.log("[Scene Analysis] Success:", result.content)
+      } else if (result.success === false) {
+        // API返回错误
+        console.log("[Scene Analysis] API returned error:", result.error, result.details)
+        
+        if (retryCount < 2) {
+          // 重试
+          console.log("[Scene Analysis] Retrying...", retryCount, "Max retries: 2")
+          setTimeout(() => {
+            analyzeScene(imageUrl, retryCount + 1)
+          }, 2000) // 2秒后重试
+          return
+        } else {
+          // 清除超时，达到最大重试次数
+          clearTimeout(timeoutId)
+          setSceneAnalysisError(true)
+          console.log("[Scene Analysis] Max retries reached. Error:", result.error)
+        }
+      } else {
+        // 清除超时
+        clearTimeout(timeoutId)
+        setSceneAnalysisError(true)
+        console.log("[Scene Analysis] No scene analysis result. Result:", result)
+      }
+    } catch (error) {
+      console.error("[Scene Analysis] Error:", error)
+      if (retryCount < 2) {
+        // 网络错误，重试
+        console.log("[Scene Analysis] Network error, retrying...")
+        setTimeout(() => {
+          analyzeScene(imageUrl, retryCount + 1)
+        }, 2000) // 2秒后重试
+        return
+      } else {
+        // 清除超时
+        clearTimeout(timeoutId)
+        setSceneAnalysisError(true)
+      }
+    } finally {
+      // 只有在不是重试的情况下才设置loading为false
+      if (retryCount === 0 || retryCount >= 2) {
+        setSceneAnalysisLoading(false)
+      }
+    }
+  }
+
   // 风格理解函数
   const detectStyle = async (imageUrl: string) => {
     console.log("[Style Detection] ===== STARTING STYLE DETECTION =====")
@@ -847,17 +1059,23 @@ export default function DesignPage() {
       detectedFurniture: detectedFurniture.length,
       furnitureDetectionError,
       furnitureDetectionTriggered,
+      sceneAnalysisLoading,
+      sceneAnalysisResult,
+      sceneAnalysisError,
+      sceneAnalysisTriggered,
       isCloudUrl
     })
     
-    // 如果正在识别家具，显示加载状态
-    if (furnitureDetectionLoading) {
-      return [{ name: "AI智能识别中", icon: "🤖" }]
+    // 如果正在识别家具或分析场景，显示加载状态
+    if (furnitureDetectionLoading || sceneAnalysisLoading) {
+      return [{ name: "AI智能分析中", icon: "🤖" }]
     }
     
     // 如果是云端图片且已触发识别，但还没有结果，显示加载状态
-    if (isCloudUrl && furnitureDetectionTriggered && !furnitureDetectionError && detectedFurniture.length === 0) {
-      return [{ name: "AI智能识别中", icon: "🤖" }]
+    if (isCloudUrl && (furnitureDetectionTriggered || sceneAnalysisTriggered) && 
+        !furnitureDetectionError && !sceneAnalysisError && 
+        detectedFurniture.length === 0 && !sceneAnalysisResult) {
+      return [{ name: "AI智能分析中", icon: "🤖" }]
     }
     
     // 如果识别到家具，返回识别的结果
@@ -866,8 +1084,8 @@ export default function DesignPage() {
       return detectedFurniture
     }
     
-    // 如果识别失败，显示默认家具
-    if (furnitureDetectionError) {
+    // 如果识别失败或场景分析失败，显示默认家具
+    if (furnitureDetectionError || sceneAnalysisError) {
       console.log("[getKeyFurniture] Returning default furniture due to error")
       return [
         { name: "沙发", icon: "🛋️" },
@@ -1007,11 +1225,13 @@ export default function DesignPage() {
             sessionStorage.setItem("uploadedImageName", file.name)
           }
           
-          // 设置房间图片并触发家具识别
+          // 设置房间图片并触发家具识别和场景分析
           setRoomImage(cloudUrl)
           setDetectedFurniture([]) // 清空之前的识别结果
           setFurnitureDetectionError(false) // 重置错误状态
-          // 不重置 furnitureDetectionTriggered，让 useEffect 处理触发逻辑
+          setSceneAnalysisResult("") // 清空之前的场景分析结果
+          setSceneAnalysisError(false) // 重置场景分析错误状态
+          // 不重置 furnitureDetectionTriggered 和 sceneAnalysisTriggered，让 useEffect 处理触发逻辑
           
           // 让useEffect处理家具识别，这里只处理风格理解
           console.log("[Image Upload] ===== UPLOAD COMPLETE =====")
@@ -1372,8 +1592,10 @@ export default function DesignPage() {
 
   // 保存当前图片到历史记录
   const saveImageToHistory = () => {
-    setImageHistory(prev => [...prev, roomImage])
-    console.log("[Image History] Saved current image to history:", roomImage)
+    if (roomImage) {
+      setImageHistory(prev => [...prev, roomImage])
+      console.log("[Image History] Saved current image to history:", roomImage)
+    }
   }
 
   // 重置图片到上一次修改前的状态
@@ -1714,7 +1936,7 @@ export default function DesignPage() {
 
     try {
       // Convert current room image to valid URL
-      const imageUrl = await convertImageToUrl(roomImage)
+      const imageUrl = roomImage ? await convertImageToUrl(roomImage) : null
 
       if (!imageUrl) {
         // 提供更友好的错误信息
@@ -2215,7 +2437,7 @@ export default function DesignPage() {
       
       // 使用convertImageToUrl函数将当前房间图片转换为有效的URL
       // 这样可以确保本地上传的图片能够被豆包API正确识别和处理
-      const targetImageUrl = await convertImageToUrl(roomImage)
+      const targetImageUrl = roomImage ? await convertImageToUrl(roomImage) : null
       
       if (!targetImageUrl) {
         throw new Error("无法获取有效的图片URL，请确保已上传房间图片")
@@ -2357,7 +2579,7 @@ export default function DesignPage() {
 
   const handleRenderEffect = () => {
     // Store current room image for preview page
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && roomImage) {
       sessionStorage.setItem("previewImage", roomImage)
     }
     // Navigate to preview page

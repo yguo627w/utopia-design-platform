@@ -28,7 +28,7 @@ const furnitureTypeMapping: { [key: string]: string } = {
 function generateMergePrompt(furnitureType: string): string {
   const englishFurnitureType = furnitureTypeMapping[furnitureType] || "furniture"
   
-  return `Replace the ${englishFurnitureType} in the indoor scene image with the ${englishFurnitureType} from the furniture image. Keep the original indoor background unchanged. Scale and place the ${englishFurnitureType} according to its real-world dimensions. Ensure that the ${englishFurnitureType} is realistically proportioned within the room, aligned with the ${englishFurnitureType} original position, and integrated seamlessly into the scene with correct perspective, lighting, and shadows.`
+  return `Replace the ${englishFurnitureType} in the indoor scene image with the ${englishFurnitureType} in the furniture image while keeping the image size ratio unchanged. Keep the original indoor background unchanged. Ensure that the proportion of ${englishFurnitureType} in the room is appropriate, aligned with the original position of ${englishFurnitureType}, and seamlessly integrated into the scene through the correct perspective, lighting, and shadows.`
 }
 
 export async function POST(request: NextRequest) {

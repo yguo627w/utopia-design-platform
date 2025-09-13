@@ -400,6 +400,18 @@ export default function DesignPage() {
 
   const designStyles: DesignStyle[] = [
     {
+      id: "cream-style",
+      name: "奶油风",
+      description: "以柔和的奶油色系为主色调，营造出温馨、治愈且充满柔美感的空间氛围",
+      image: "https://b.bdstatic.com/searchbox/image/gcp/20250830/2883885109.jpg",
+      likes: "650",
+      rating: 4.6,
+      tag: "新晋",
+      keywords: ["奶油色系", "柔和质感", "温馨治愈", "圆润造型"],
+      familyTags: ["小孩", "老人", "情侣"],
+      features: ["柔和色调", "圆润家具", "温暖照明", "舒适材质"]
+    },
+    {
       id: "modern-minimalist",
       name: "现代简约风",
       description: "简约而不简单的空间设计，注重功能性与美观性的完美结合",
@@ -422,18 +434,6 @@ export default function DesignPage() {
       keywords: ["金属元素", "高级质感", "精致细节", "简约奢华"],
       familyTags: ["情侣", "老人"],
       features: ["金属装饰", "皮革家具", "水晶灯具", "大理石台面"]
-    },
-    {
-      id: "cream-style",
-      name: "奶油风",
-      description: "以柔和的奶油色系为主色调，营造出温馨、治愈且充满柔美感的空间氛围",
-      image: "https://b.bdstatic.com/searchbox/image/gcp/20250830/2883885109.jpg",
-      likes: "650",
-      rating: 4.6,
-      tag: "新晋",
-      keywords: ["奶油色系", "柔和质感", "温馨治愈", "圆润造型"],
-      familyTags: ["小孩", "老人", "情侣"],
-      features: ["柔和色调", "圆润家具", "温暖照明", "舒适材质"]
     },
     {
       id: "wooden-style",
@@ -1643,11 +1643,12 @@ export default function DesignPage() {
     return null
   }
 
-  const callImageGenerationAPI = async (prompt: string, imageUrl: string) => {
+  const callImageGenerationAPI = async (prompt: string, imageUrl: string, source: string = "default") => {
     try {
       console.log("[v0] Calling image generation API with:", {
         prompt,
-        imageUrl: imageUrl.substring(0, 100) + (imageUrl.length > 100 ? "..." : "")
+        imageUrl: imageUrl.substring(0, 100) + (imageUrl.length > 100 ? "..." : ""),
+        source
       })
 
       const response = await fetch("/api/generate-image", {
@@ -1658,6 +1659,7 @@ export default function DesignPage() {
         body: JSON.stringify({
           prompt: prompt,
           image: imageUrl,
+          source: source,
         }),
       })
 
@@ -2300,31 +2302,13 @@ export default function DesignPage() {
     
     try {
       // 构建家庭成员标签描述
-      const familyMemberDescriptions = selectedFamilyMembers.map(memberId => {
+      const familyTags = selectedFamilyMembers.map(memberId => {
         const member = familyMembers.find(m => m.id === memberId)
         return member ? member.name : memberId
       }).join("、")
 
-      // 构建风格应用设置的家具元素
-      const styleFurnitureElements = selectedFamilyMembers.map(memberId => {
-        switch (memberId) {
-          case "dog":
-            return "狗窝"
-          case "cat":
-            return "猫爬架"
-          case "child":
-            return "婴儿车"
-          case "elderly":
-            return "舒适躺椅"
-          case "couple":
-            return "温馨照片墙"
-          default:
-            return memberId
-        }
-      }).join("、")
-
-      // 构建完整的prompt，按照指定结构
-      const prompt = `在整体图片色调不发生明显变化、家具结构不改变的前提下，请按照以下输入进行图片修改：把房间修改为【${selectedStyle.name}】，关键词为【${selectedStyle.keywords.join("、")}】，在设计过程中注意增加【${styleFurnitureElements}】相关家具元素，并注意用户补充需求【${additionalRequirements || "无特殊要求"}】。`
+      // 构建完整的prompt，按照新的指定结构
+      const prompt = `保持当前房间的布局和整体结构不变(例如不改变沙发、茶几、电视墙、床、衣柜等家具的位置)，不改变家具的基本形态，仅将风格改为「${selectedStyle.keywords.join("、")}」，在设计过程中注意增加【${familyTags}】相关家具元素，并注意用户补充需求【${additionalRequirements || "无补充需求"}】。`
       
       // 调用豆包API进行风格应用
       const targetImageUrl = await convertImageToUrl(roomImage)
@@ -2336,7 +2320,7 @@ export default function DesignPage() {
       console.log("[风格应用] 应用风格:", prompt)
       console.log("[风格应用] 目标图片:", targetImageUrl.substring(0, 100) + "...")
       
-      const generatedImageUrl = await callImageGenerationAPI(prompt, targetImageUrl)
+      const generatedImageUrl = await callImageGenerationAPI(prompt, targetImageUrl, "style-application")
       
       // 更新房间图片
       saveImageToHistory() // 保存当前图片到历史记录
@@ -2346,7 +2330,7 @@ export default function DesignPage() {
       // 添加AI消息到对话
       const aiMessage: ChatMessage = {
         type: "ai",
-        content: `已成功应用${selectedStyle.name}风格！我根据您选择的家庭成员标签（${familyMemberDescriptions}）和补充需求，为您生成了全新的设计方案。新的设计融合了${selectedStyle.keywords.join("、")}等风格特征，并特别考虑了${styleFurnitureElements}等家具元素的布局。`,
+        content: `已成功应用${selectedStyle.name}风格！我根据您选择的家庭成员标签（${familyTags}）和补充需求，为您生成了全新的设计方案。新的设计融合了${selectedStyle.keywords.join("、")}等风格特征，并特别考虑了${familyTags}等家具元素的布局。`,
         avatar: "/woman-designer-avatar.png",
         time: new Date().toLocaleTimeString("zh-CN", {
           hour: "2-digit",
@@ -3013,22 +2997,27 @@ export default function DesignPage() {
                 <div className="border-t border-border/50"></div>
 
                 {/* 智能购物建议 */}
-                <div className="bg-gradient-to-r from-blue-500/10 to-green-500/10 rounded-lg p-4 border border-blue-200/50">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="bg-gradient-to-r from-blue-500 to-green-500 rounded-full p-2">
-                      <span className="text-white text-lg">🛒</span>
+                <div className="bg-gradient-to-r from-blue-500/10 to-green-500/10 rounded-lg p-2 border border-blue-200/50">
+                  <div className="flex items-center gap-3">
+                    {/* 左侧图标 */}
+                    <div className="bg-gradient-to-r from-blue-500 to-green-500 rounded-lg p-1.5 w-10 h-10 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white text-sm">🛒</span>
                     </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-blue-700">智能购物建议</h3>
-                      <p className="text-sm text-blue-600">AI识别页面家具，一键购买</p>
+                    
+                    {/* 中间文字区域 */}
+                    <div className="flex-1">
+                      <h3 className="text-base font-bold text-blue-700 mb-0.5">智能购物建议</h3>
+                      <h4 className="text-xs font-medium text-blue-600 whitespace-nowrap">AI识别页面家具，一键购买</h4>
                     </div>
+                    
+                    {/* 右侧按钮 */}
+                    <Button 
+                      onClick={handleSmartRecognitionOpen}
+                      className="bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-semibold px-2 py-1 text-xs flex-shrink-0"
+                    >
+                      识别
+                    </Button>
                   </div>
-                  <Button 
-                    onClick={handleSmartRecognitionOpen}
-                    className="w-full bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white font-semibold"
-                  >
-                    🔍 识别当前页面家具
-                  </Button>
                 </div>
 
               </div>

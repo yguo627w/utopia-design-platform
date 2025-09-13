@@ -2,9 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt, image } = await request.json()
+    const { prompt, image, source = "default" } = await request.json()
 
-    console.log("[API] Received request:", { prompt, image: image ? "image provided" : "no image" })
+    console.log("[API] Received request:", { prompt, image: image ? "image provided" : "no image", source })
 
     if (!prompt || !image) {
       console.error("[API] Missing required parameters:", { prompt: !!prompt, image: !!image })
@@ -31,10 +31,16 @@ export async function POST(request: NextRequest) {
     console.log("[API] Using fallback:", useFallback)
 
     try {
+      // 根据调用来源决定prompt格式
+      const finalPrompt = source === "style-application" 
+        ? prompt  // 风格应用直接使用自定义prompt，不添加前缀
+        : "在其他家具不变的情况，请按照我的输入进行图片修改，修改指令如下：" + prompt  // 其他调用来源使用默认前缀
+
       // 使用新的seededit接口
       console.log("[API] Sending request to seededit API with:", {
         image_url: processedImageUrl,
-        prompt: "在其他家具不变的情况，请按照我的输入进行图片修改，修改指令如下：" + prompt,
+        prompt: finalPrompt,
+        source: source,
       })
 
       const response = await fetch("http://competitor-cy.bcc-szth.baidu.com:80/doubao/edit-image", {
@@ -44,7 +50,7 @@ export async function POST(request: NextRequest) {
         },
         body: JSON.stringify({
           image_url: processedImageUrl,
-          prompt: "在其他家具不变的情况，请按照我的输入进行图片修改，修改指令如下：" + prompt,
+          prompt: finalPrompt,
           watermark: "False",
         }),
       })
@@ -56,7 +62,7 @@ export async function POST(request: NextRequest) {
         // 如果外部API失败且我们使用的是原始图像，尝试使用fallback
         if (!useFallback && (image.startsWith("blob:") || image.startsWith("data:") || image.includes(".webp"))) {
           console.log("[API] Retrying with fallback image")
-          return await retryWithFallback(prompt)
+          return await retryWithFallback(prompt, source)
         }
         
         throw new Error(`Seededit API request failed with status ${response.status}: ${errorText}`)
@@ -80,7 +86,7 @@ export async function POST(request: NextRequest) {
       // 如果API调用失败且我们还没有使用fallback，尝试使用fallback
       if (!useFallback) {
         console.log("[API] API call failed, retrying with fallback")
-        return await retryWithFallback(prompt)
+        return await retryWithFallback(prompt, source)
       }
       throw apiError
     }
@@ -94,8 +100,13 @@ export async function POST(request: NextRequest) {
 }
 
 // 使用fallback图像重试的函数
-async function retryWithFallback(prompt: string) {
+async function retryWithFallback(prompt: string, source: string = "default") {
   const fallbackImage = "https://design.gemcoder.com/staticResource/echoAiSystemImages/676985223975790e510ca20672144337.png"
+  
+  // 根据调用来源决定prompt格式
+  const finalPrompt = source === "style-application" 
+    ? prompt  // 风格应用直接使用自定义prompt，不添加前缀
+    : "在其他家具不变的情况，请按照我的输入进行图片修改，修改指令如下：" + prompt  // 其他调用来源使用默认前缀
   
   const response = await fetch("http://competitor-cy.bcc-szth.baidu.com:80/doubao/edit-image", {
     method: "POST",
@@ -104,7 +115,7 @@ async function retryWithFallback(prompt: string) {
     },
     body: JSON.stringify({
       image_url: fallbackImage,
-      prompt: "在其他家具不变的情况，请按照我的输入进行图片修改，修改指令如下：" + prompt,
+      prompt: finalPrompt,
       watermark: "False",
     }),
   })

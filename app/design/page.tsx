@@ -81,16 +81,14 @@ export default function DesignPage() {
   const [zoomLevel, setZoomLevel] = useState(1)
   const [chatImages, setChatImages] = useState<Array<{ id: string; url: string; name: string }>>([])
   const [activeTab, setActiveTab] = useState("inspiration")
-  const [roomImage, setRoomImage] = useState("https://design.gemcoder.com/staticResource/echoAiSystemImages/676985223975790e510ca20672144337.png")
-  const [originalRoomImage, setOriginalRoomImage] = useState("https://design.gemcoder.com/staticResource/echoAiSystemImages/676985223975790e510ca20672144337.png")
+  const [roomImage, setRoomImage] = useState<string | null>(null)
+  const [originalRoomImage, setOriginalRoomImage] = useState<string | null>(null)
+  const [isImageLoading, setIsImageLoading] = useState(true)
   const [showResetButton, setShowResetButton] = useState(false)
   const [imageHistory, setImageHistory] = useState<string[]>([]) // 图片历史记录
   const [selectedStyleTitle, setSelectedStyleTitle] = useState("")
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState("")
-  
-  // 图片加载状态管理
-  const [isImageLoading, setIsImageLoading] = useState(false)
   const [pendingImage, setPendingImage] = useState<string | null>(null) // 待加载的图片
   
   // 新增AI风格设计相关状态
@@ -287,6 +285,34 @@ export default function DesignPage() {
     setIsHydrated(true)
   }, [])
 
+  // 图片预加载函数
+  const preloadImage = (src: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => resolve()
+      img.onerror = () => reject(new Error(`Failed to load image: ${src}`))
+      img.src = src
+    })
+  }
+
+  // 安全的图片切换函数，带预加载
+  const switchToImageWithPreload = async (newImageUrl: string) => {
+    try {
+      setIsImageLoading(true)
+      await preloadImage(newImageUrl)
+      setRoomImage(newImageUrl)
+      setOriginalRoomImage(newImageUrl)
+      setIsImageLoading(false)
+      console.log("[Design] 图片预加载完成并切换:", newImageUrl)
+    } catch (error) {
+      console.error("[Design] 图片预加载失败:", error)
+      // 即使预加载失败，也设置图片（浏览器会处理加载）
+      setRoomImage(newImageUrl)
+      setOriginalRoomImage(newImageUrl)
+      setIsImageLoading(false)
+    }
+  }
+
   // 客户端挂载后恢复图片状态
   useEffect(() => {
     if (!isClient) return
@@ -300,11 +326,8 @@ export default function DesignPage() {
     const styleType = sessionStorage.getItem("selectedStyleType")
 
     if (uploadedImage) {
-      // 只有在roomImage不是用户上传的图片时才设置，避免重复设置
-      if (roomImage !== uploadedImage) {
-        // 使用安全的图片切换函数
-        switchToImage(uploadedImage)
-      }
+      // 使用预加载函数切换图片
+      switchToImageWithPreload(uploadedImage)
       // 清理所有上传相关的sessionStorage数据
       sessionStorage.removeItem("uploadedImage")
       sessionStorage.removeItem("uploadedImageName")
@@ -315,10 +338,8 @@ export default function DesignPage() {
         // 不在这里直接调用，让useEffect处理
       }
     } else if (selectedStyleImage) {
-      // 只有在roomImage不是选中的风格图片时才设置，避免重复设置
-      if (roomImage !== selectedStyleImage) {
-        setRoomImage(selectedStyleImage)
-      }
+      // 使用预加载函数切换图片
+      switchToImageWithPreload(selectedStyleImage)
       if (styleTitle) {
         setSelectedStyleTitle(styleTitle)
       }
@@ -327,6 +348,10 @@ export default function DesignPage() {
       sessionStorage.removeItem("selectedStyleTitle")
       sessionStorage.removeItem("selectedStyleType")
       console.log("[v0] Loaded selected style and cleaned sessionStorage")
+    } else {
+      // 没有sessionStorage数据时，设置默认图片
+      const defaultImage = "https://design.gemcoder.com/staticResource/echoAiSystemImages/676985223975790e510ca20672144337.png"
+      switchToImageWithPreload(defaultImage)
     }
   }, [isClient])
 
@@ -339,8 +364,8 @@ export default function DesignPage() {
         const uploadedImage = sessionStorage.getItem("uploadedImage")
         if (uploadedImage && roomImage !== uploadedImage) {
           console.log("[Design] 页面重新可见，恢复图片:", uploadedImage)
-          // 使用安全的图片切换函数
-          switchToImage(uploadedImage)
+          // 使用预加载函数切换图片
+          switchToImageWithPreload(uploadedImage)
           sessionStorage.removeItem("uploadedImage")
         }
       }
@@ -1308,16 +1333,6 @@ export default function DesignPage() {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
     }
-  }
-
-  // 图片预加载函数
-  const preloadImage = (imageUrl: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image()
-      img.onload = () => resolve()
-      img.onerror = () => reject(new Error('图片加载失败'))
-      img.src = imageUrl
-    })
   }
 
   // 安全的图片切换函数
@@ -2919,12 +2934,44 @@ export default function DesignPage() {
                   </div>
                 )}
                 
-                <img
-                  src={roomImage || "/placeholder.svg"}
-                  alt="设计房间"
-                  className="w-full h-full object-cover transition-transform duration-300 ease-in-out"
-                  style={{ transform: `scale(${zoomLevel})`, transformOrigin: "center top" }}
-                />
+                {/* 图片容器 */}
+                <div className="relative w-full h-full overflow-hidden">
+                  {/* Loading状态 */}
+                  {isImageLoading && (
+                    <div className="absolute inset-0 bg-muted flex items-center justify-center z-10">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                        <div className="text-sm text-muted-foreground">图片加载中...</div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 主图片 */}
+                  {roomImage && (
+                    <img
+                      src={roomImage}
+                      alt="设计房间"
+                      className={`w-full h-full object-cover transition-all duration-500 ease-in-out ${
+                        isImageLoading ? 'opacity-0' : 'opacity-100'
+                      }`}
+                      style={{ transform: `scale(${zoomLevel})`, transformOrigin: "center top" }}
+                      onLoad={() => {
+                        // 图片加载完成后，延迟一点时间再隐藏loading状态
+                        setTimeout(() => setIsImageLoading(false), 100)
+                      }}
+                    />
+                  )}
+                  
+                  {/* 占位符 - 当没有图片时显示 */}
+                  {!roomImage && !isImageLoading && (
+                    <div className="w-full h-full bg-muted flex items-center justify-center">
+                      <div className="text-center text-muted-foreground">
+                        <div className="text-lg mb-2">📷</div>
+                        <div className="text-sm">暂无图片</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 
                 {/* 预加载待显示的图片，但不显示 */}
                 {pendingImage && (
@@ -3630,11 +3677,17 @@ export default function DesignPage() {
                       <Loader2 className="h-4 w-4 animate-spin text-white" />
                     </div>
                   )}
-                  <img
-                    src={roomImage || "/placeholder.svg"}
-                    alt="当前页面设计图"
-                    className="w-full h-32 object-cover rounded-lg mb-2"
-                  />
+                  {roomImage ? (
+                    <img
+                      src={roomImage}
+                      alt="当前页面设计图"
+                      className="w-full h-32 object-cover rounded-lg mb-2"
+                    />
+                  ) : (
+                    <div className="w-full h-32 bg-muted rounded-lg mb-2 flex items-center justify-center">
+                      <div className="text-muted-foreground text-sm">暂无图片</div>
+                    </div>
+                  )}
                   
                   {/* 预加载待显示的图片，但不显示 */}
                   {pendingImage && (

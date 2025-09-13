@@ -200,12 +200,25 @@ export default function PreviewPage() {
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => {
+                onClick={async () => {
                   // 保存当前图片到sessionStorage，供design页面恢复使用
                   const currentImage = renderedImage || previewImage
                   if (currentImage) {
                     sessionStorage.setItem("uploadedImage", currentImage)
                     console.log("[Preview] 保存图片到sessionStorage:", currentImage)
+                    
+                    // 预加载图片，确保design页面切换时图片已经准备好
+                    try {
+                      const img = new Image()
+                      img.src = currentImage
+                      await new Promise((resolve, reject) => {
+                        img.onload = resolve
+                        img.onerror = reject
+                      })
+                      console.log("[Preview] 图片预加载完成，准备跳转")
+                    } catch (error) {
+                      console.warn("[Preview] 图片预加载失败，但仍会跳转:", error)
+                    }
                   }
                   // 跳转到design页面
                   window.location.href = "/design"

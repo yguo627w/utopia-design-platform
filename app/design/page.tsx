@@ -46,6 +46,7 @@ import {
 import { useCart } from "@/hooks/use-cart"
 
 interface ChatMessage {
+  id?: string
   type: "ai" | "user"
   content: string
   avatar?: string
@@ -143,6 +144,10 @@ export default function DesignPage() {
   const [sceneAnalysisResult, setSceneAnalysisResult] = useState<string>("")
   const [sceneAnalysisError, setSceneAnalysisError] = useState(false)
   const [sceneAnalysisTriggered, setSceneAnalysisTriggered] = useState(false)
+  
+  // 流式输出相关状态
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null)
+  const [streamingContent, setStreamingContent] = useState<string>("")
   
   // 家具尺寸编辑相关状态
   const [showDimensionEditDialog, setShowDimensionEditDialog] = useState(false)
@@ -249,6 +254,7 @@ export default function DesignPage() {
   
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
+      id: "welcome-message",
       type: "ai",
       content:
         "你好！我是你的AI设计助手，请上传房间照片或描述装修需求，例如'温馨北欧风客厅'，我会为你生成个性化设计方案。",
@@ -291,7 +297,9 @@ export default function DesignPage() {
         minute: "2-digit",
       })
       
+      const messageId = `second-message-${Date.now()}`
       const secondMessage: ChatMessage = {
+        id: messageId,
         type: "ai",
         content: "已识别出你上传的房间照片，让我为你进行房间场景分析",
         avatar: "/woman-designer-avatar.png",
@@ -299,6 +307,7 @@ export default function DesignPage() {
       }
       
       setChatMessages(prev => [...prev, secondMessage])
+      streamMessage(secondMessage.content, messageId)
     }
   }, [roomImage, chatMessages])
   
@@ -317,7 +326,9 @@ export default function DesignPage() {
       })
       
       const furnitureNames = detectedFurniture.map(f => f.name).join("、")
+      const messageId = `furniture-analysis-${Date.now()}`
       const furnitureMessage: ChatMessage = {
+        id: messageId,
         type: "ai",
         content: `【家具分析】：已为你分析出当前房间中的关键家具信息为：${furnitureNames}，你可以结合当前场景的关键家具进行设计改造`,
         avatar: "/woman-designer-avatar.png",
@@ -325,6 +336,7 @@ export default function DesignPage() {
       }
       
       setChatMessages(prev => [...prev, furnitureMessage])
+      streamMessage(furnitureMessage.content, messageId)
     }
   }, [detectedFurniture, furnitureDetectionLoading, chatMessages])
   
@@ -342,7 +354,9 @@ export default function DesignPage() {
         minute: "2-digit",
       })
       
+      const messageId = `scene-analysis-${Date.now()}`
       const sceneMessage: ChatMessage = {
+        id: messageId,
         type: "ai",
         content: `【场景分析】：${sceneAnalysisResult}`,
         avatar: "/woman-designer-avatar.png",
@@ -350,6 +364,7 @@ export default function DesignPage() {
       }
       
       setChatMessages(prev => [...prev, sceneMessage])
+      streamMessage(sceneMessage.content, messageId)
     }
   }, [sceneAnalysisResult, sceneAnalysisLoading, chatMessages])
   
@@ -360,6 +375,49 @@ export default function DesignPage() {
   const [designAreaLoading, setDesignAreaLoading] = useState(false)
   const router = useRouter()
   const { addToCart } = useCart()
+
+  // 流式输出函数
+  const streamMessage = async (content: string, messageId: string) => {
+    setStreamingMessageId(messageId)
+    setStreamingContent("")
+    
+    // 将内容按句子分割（以句号、问号、感叹号分割）
+    const sentences = content.split(/([。！？])/).filter(s => s.trim())
+    const fullSentences: string[] = []
+    
+    // 重新组合完整的句子
+    for (let i = 0; i < sentences.length; i += 2) {
+      if (sentences[i] && sentences[i + 1]) {
+        fullSentences.push(sentences[i] + sentences[i + 1])
+      } else if (sentences[i]) {
+        fullSentences.push(sentences[i])
+      }
+    }
+    
+    let currentContent = ""
+    
+    for (const sentence of fullSentences) {
+      // 逐字输出每个句子
+      for (let i = 0; i <= sentence.length; i++) {
+        currentContent = sentence.substring(0, i)
+        setStreamingContent(currentContent)
+        await new Promise(resolve => setTimeout(resolve, 50)) // 50ms延迟
+      }
+      
+      // 句子之间的停顿
+      await new Promise(resolve => setTimeout(resolve, 300))
+    }
+    
+    // 流式输出完成，更新实际消息
+    setChatMessages(prev => prev.map(msg => 
+      msg.id === messageId 
+        ? { ...msg, content: content }
+        : msg
+    ))
+    
+    setStreamingMessageId(null)
+    setStreamingContent("")
+  }
 
   // 家庭成员标签数据
   const familyMembers: FamilyMember[] = [
@@ -521,7 +579,7 @@ export default function DesignPage() {
       likes: "650",
       rating: 4.6,
       tag: "新晋",
-      keywords: ["奶油色系", "柔和质感", "温馨治愈", "圆润造型"],
+      keywords: ["奶油色系", "柔和质感", "温馨治愈"],
       familyTags: ["小孩", "老人", "情侣"],
       features: ["柔和色调", "圆润家具", "温暖照明", "舒适材质"]
     },
@@ -644,6 +702,15 @@ export default function DesignPage() {
   }
 
   const wardrobeProducts = [
+    {
+      id: 100,
+      name: "原木色衣柜",
+      image: "https://b.bdstatic.com/searchbox/image/gcp/20250913/237631865.webp",
+      modifiedImage: "https://b.bdstatic.com/searchbox/image/gcp/20250913/237631865.webp",
+      price: "¥199",
+      rating: 4.7,
+      reviews: 95,
+    },
     {
       id: 101,
       name: "现代简约衣柜",
@@ -1967,7 +2034,9 @@ export default function DesignPage() {
       const generatedImageUrl = await callImageGenerationAPI(userInputMessage, imageUrl)
 
       // Add AI response with generated image
+      const messageId = `ai-response-${Date.now()}`
       const aiMessage: ChatMessage = {
+        id: messageId,
         type: "ai",
         content: `根据您的需求"${userInputMessage}"，我为您生成了新的设计方案：`,
         avatar: "/woman-designer-avatar.png",
@@ -1979,6 +2048,7 @@ export default function DesignPage() {
       }
 
       setChatMessages((prev) => [...prev, aiMessage])
+      streamMessage(aiMessage.content, messageId)
 
       // Update the room image with the generated result
       saveImageToHistory() // 保存当前图片到历史记录
@@ -2003,7 +2073,9 @@ export default function DesignPage() {
       }
 
       // Add error message
+      const messageId = `error-message-${Date.now()}`
       const errorMessage: ChatMessage = {
+        id: messageId,
         type: "ai",
         content: errorContent,
         avatar: "/woman-designer-avatar.png",
@@ -2014,6 +2086,7 @@ export default function DesignPage() {
       }
 
       setChatMessages((prev) => [...prev, errorMessage])
+      streamMessage(errorMessage.content, messageId)
     } finally {
       setIsLoading(false)
       // 清除设计区域loading状态
@@ -2455,7 +2528,9 @@ export default function DesignPage() {
       setShowResetButton(true) // 显示重置按钮
       
       // 添加AI消息到对话
+      const messageId = `style-design-${Date.now()}`
       const aiMessage: ChatMessage = {
+        id: messageId,
         type: "ai",
         content: `根据您上传的参考图片，我为您生成了"${styleKeywords}"风格的设计方案：`,
         avatar: "/woman-designer-avatar.png",
@@ -2466,6 +2541,7 @@ export default function DesignPage() {
         image: generatedImageUrl,
       }
       setChatMessages((prev) => [...prev, aiMessage])
+      streamMessage(aiMessage.content, messageId)
       
       setToastMessage("风格设计方案生成成功！")
       setShowToast(true)
@@ -2550,7 +2626,9 @@ export default function DesignPage() {
       setShowResetButton(true) // 显示重置按钮
       
       // 添加AI消息到对话
+      const messageId = `style-apply-${Date.now()}`
       const aiMessage: ChatMessage = {
+        id: messageId,
         type: "ai",
         content: `已成功应用${selectedStyle.name}风格！我根据您选择的家庭成员标签（${familyTags}）和补充需求，为您生成了全新的设计方案。新的设计融合了${selectedStyle.keywords.join("、")}等风格特征，并特别考虑了${familyTags}等家具元素的布局。`,
         avatar: "/woman-designer-avatar.png",
@@ -2561,6 +2639,7 @@ export default function DesignPage() {
         image: generatedImageUrl,
       }
       setChatMessages((prev) => [...prev, aiMessage])
+      streamMessage(aiMessage.content, messageId)
       
       // 关闭风格详情页面
       setShowStyleDetail(false)
@@ -3417,7 +3496,7 @@ export default function DesignPage() {
           </div>
         </div>
 
-        <div className="w-72 xl:w-80 2xl:w-[320px] border-l border-border bg-card/30 flex flex-col h-full flex-shrink-0">
+        <div className="w-72 xl:w-80 2xl:w-[320px] border-l border-border flex flex-col h-full flex-shrink-0" style={{backgroundColor: '#F7FCF8'}}>
           <div className="p-4 xl:p-5 border-b border-border flex-shrink-0">
             <h2 className="text-lg xl:text-xl font-semibold flex items-center gap-2">
               <MessageCircle className="h-5 w-5 text-primary" />
@@ -3443,11 +3522,19 @@ export default function DesignPage() {
                 <div className={`flex flex-col ${message.type === "user" ? "items-end" : "items-start"}`}>
                   <div
                     className={`max-w-[85%] p-3 xl:p-4 rounded-lg ${
-                      message.type === "user" ? "bg-primary text-white" : "bg-muted"
+                      message.type === "user" ? "text-white" : "text-gray-800"
                     }`}
+                    style={{
+                      backgroundColor: message.type === "user" ? "#82D494" : "#FFFFFF"
+                    }}
                     suppressHydrationWarning={true}
                   >
-                    <p className="text-sm xl:text-base whitespace-pre-line">{message.content}</p>
+                    <p className="text-xs xl:text-sm whitespace-pre-line">
+                      {streamingMessageId === message.id ? streamingContent : message.content}
+                      {streamingMessageId === message.id && (
+                        <span className="animate-pulse">|</span>
+                      )}
+                    </p>
                     {message.image && (
                       <div className="mt-2">
                         <img
@@ -3505,7 +3592,7 @@ export default function DesignPage() {
             <div className="flex gap-2 mb-3">
               <Input
                 placeholder="描述你的设计需求..."
-                className="flex-1 xl:text-base"
+                className="flex-1 text-xs xl:text-sm"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={(e) => {

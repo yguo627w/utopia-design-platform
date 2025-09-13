@@ -18,20 +18,31 @@ export const useCart = () => {
   const loadCartFromStorage = useCallback(() => {
     try {
       const sharedCart = JSON.parse(localStorage.getItem("sharedCart") || "[]")
-      const defaultCart: CartItem[] = [
-        {
-          id: 1001,
-          name: "北欧风三人布艺沙发",
-          price: 239,
-          image: "/nordic-fabric-sofa.png",
-          quantity: 1,
-          source: "marketplace",
-          addedAt: Date.now() - 1000000, // 设置较早的时间，确保在底部
-        },
-      ]
-
-      // 合并默认购物车和从设计页面添加的商品
-      const mergedCart = [...defaultCart, ...sharedCart]
+      
+      // 检查是否已经初始化过默认商品
+      const hasInitialized = localStorage.getItem("cartInitialized")
+      const defaultItemRemoved = localStorage.getItem("defaultItemRemoved")
+      
+      let mergedCart: CartItem[] = [...sharedCart]
+      
+      // 只有在第一次加载且默认商品未被删除时才添加默认商品
+      if (!hasInitialized && !defaultItemRemoved) {
+        const defaultCart: CartItem[] = [
+          {
+            id: 1001,
+            name: "北欧风三人布艺沙发",
+            price: 239,
+            image: "/nordic-fabric-sofa.png",
+            quantity: 1,
+            source: "marketplace",
+            addedAt: Date.now() - 1000000, // 设置较早的时间，确保在底部
+          },
+        ]
+        mergedCart = [...defaultCart, ...sharedCart]
+        
+        // 标记已经初始化
+        localStorage.setItem("cartInitialized", "true")
+      }
       
       // 按添加时间排序，最新的在底部
       mergedCart.sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0))
@@ -146,6 +157,11 @@ export const useCart = () => {
       )
       localStorage.setItem("sharedCart", JSON.stringify(sharedItems))
 
+      // 如果删除的是默认商品（ID 1001），记录删除状态
+      if (id === 1001) {
+        localStorage.setItem("defaultItemRemoved", "true")
+      }
+
       // 触发自定义事件通知其他组件购物车已更新
       window.dispatchEvent(new CustomEvent("cartUpdated", { 
         detail: { 
@@ -208,19 +224,32 @@ export const useCart = () => {
       if (event.detail && event.detail.cart) {
         // 立即更新购物车数据
         const sharedCart = event.detail.cart
-        const defaultCart: CartItem[] = [
-          {
-            id: 1001,
-            name: "北欧风三人布艺沙发",
-            price: 2399,
-            image: "/nordic-fabric-sofa.png",
-            quantity: 1,
-            source: "marketplace",
-            addedAt: Date.now() - 1000000,
-          },
-        ]
         
-        const mergedCart = [...defaultCart, ...sharedCart]
+        // 检查是否需要添加默认商品
+        const hasInitialized = localStorage.getItem("cartInitialized")
+        const defaultItemRemoved = localStorage.getItem("defaultItemRemoved")
+        
+        let mergedCart: CartItem[] = [...sharedCart]
+        
+        // 只有在第一次加载且默认商品未被删除时才添加默认商品
+        if (!hasInitialized && !defaultItemRemoved) {
+          const defaultCart: CartItem[] = [
+            {
+              id: 1001,
+              name: "北欧风三人布艺沙发",
+              price: 239,
+              image: "/nordic-fabric-sofa.png",
+              quantity: 1,
+              source: "marketplace",
+              addedAt: Date.now() - 1000000,
+            },
+          ]
+          mergedCart = [...defaultCart, ...sharedCart]
+          
+          // 标记已经初始化
+          localStorage.setItem("cartInitialized", "true")
+        }
+        
         mergedCart.sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0))
         
         setCartItems(mergedCart)

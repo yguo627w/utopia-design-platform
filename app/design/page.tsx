@@ -847,6 +847,28 @@ export default function DesignPage() {
       price: "¥89",
       rating: 4.8,
       reviews: 89,
+    },
+    {
+      id: 502,
+      name: "奶油风床单",
+      image: "https://mespd-competitor.bj.bcebos.com/IMG_6969.JPG",
+      modifiedImage: "https://mespd-competitor.bj.bcebos.com/IMG_6969.JPG",
+      price: "¥29",
+      rating: 4.6,
+      reviews: 156,
+    }
+  ]
+
+  // 床产品数据
+  const bedProducts = [
+    {
+      id: 701,
+      name: "简约木架床",
+      image: "https://mespd-competitor.bj.bcebos.com/简约木架床.webp",
+      modifiedImage: "https://mespd-competitor.bj.bcebos.com/简约木架床.webp",
+      price: "¥129",
+      rating: 4.5,
+      reviews: 89,
     }
   ]
 
@@ -859,6 +881,15 @@ export default function DesignPage() {
       price: "¥79",
       rating: 4.8,
       reviews: 89,
+    },
+    {
+      id: 602,
+      name: "小猫窝",
+      image: "https://mespd-competitor.bj.bcebos.com/IMG_6970.JPG",
+      modifiedImage: "https://mespd-competitor.bj.bcebos.com/IMG_6970.JPG",
+      price: "¥19",
+      rating: 4.7,
+      reviews: 234,
     },
   ]
 
@@ -3272,7 +3303,7 @@ export default function DesignPage() {
                         let products: any[] = []
                         switch (selectedFurnitureType) {
                           case "床":
-                            products = [] // 暂时为空，后续可以添加床产品
+                            products = bedProducts
                             break
                           case "床头柜":
                             products = bedsideTableProducts

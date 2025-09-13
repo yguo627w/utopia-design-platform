@@ -2571,21 +2571,27 @@ export default function DesignPage() {
 
               {/* MBTI测试模块 - 只在主页面显示，不在风格详情页面显示 */}
               {!showStyleDetail && (
-                <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg p-4 border border-purple-200/50">
-                  <div className="text-center mb-4">
-                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-full p-3 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
-                      <span className="text-white text-2xl">🎁</span>
+                <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg p-2 border border-purple-200/50">
+                  <div className="flex items-center gap-3">
+                    {/* 左侧图标 */}
+                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg p-1.5 w-10 h-10 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white text-sm">🎁</span>
                     </div>
-                    <h3 className="text-xl font-bold text-purple-700 mb-1">盲盒玩法</h3>
-                    <h4 className="text-lg font-semibold text-purple-600 mb-2">测一测你的MBTI最适合哪个家装风格</h4>
-                    <p className="text-sm text-purple-500">发现最适合你的乌托邦风格</p>
+                    
+                    {/* 中间文字区域 */}
+                    <div className="flex-1">
+                      <h3 className="text-base font-bold text-purple-700 mb-0.5">盲盒玩法</h3>
+                      <h4 className="text-xs font-medium text-purple-600 whitespace-nowrap">你的MBTI适合哪个家装风格</h4>
+                    </div>
+                    
+                    {/* 右侧按钮 */}
+                    <Button 
+                      onClick={handleMbtiTestOpen}
+                      className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-2 py-1 text-xs flex-shrink-0"
+                    >
+                      测一测
+                    </Button>
                   </div>
-                  <Button 
-                    onClick={handleMbtiTestOpen}
-                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
-                  >
-                    🎯 开始测试
-                  </Button>
                 </div>
               )}
             </TabsContent>
@@ -2823,37 +2829,39 @@ export default function DesignPage() {
         </div>
 
         <div className="flex-1 relative flex flex-col h-full min-w-0">
-          <div className="flex-1 bg-gradient-to-br from-muted/20 to-background overflow-hidden h-full">
-            {/* 顶部工具栏区域 */}
-            <div className="absolute top-4 left-4 z-10 flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
-              {/* 重置和缩放控制 */}
-              <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg flex items-center gap-2">
+          {/* 顶部工具栏区域 */}
+          <div className="bg-white/95 backdrop-blur-sm border-b border-border px-4 py-3 flex-shrink-0">
+            <div className="flex items-center justify-between gap-4">
+              {/* 左侧：重置和缩放控制 */}
+              <div className="flex items-center gap-3">
                 <Button 
                   size="sm" 
                   variant="secondary" 
                   onClick={handleResetImage} 
-                  className={`text-xs px-2 ${showResetButton ? 'text-white hover:opacity-90' : 'opacity-50 cursor-not-allowed'}`}
+                  className={`text-xs px-3 py-1.5 ${showResetButton ? 'text-white hover:opacity-90' : 'opacity-50 cursor-not-allowed'}`}
                   style={showResetButton ? { backgroundColor: '#A2BB40' } : {}}
                   disabled={!showResetButton}
                 >
                   回退
                 </Button>
-                <span className="text-xs text-muted-foreground font-medium hidden sm:inline">缩放</span>
-                <Button size="sm" variant="secondary" onClick={handleZoomIn} className="h-7 w-7 p-0">
-                  <ZoomIn className="h-3 w-3" />
-                </Button>
-                <Button size="sm" variant="secondary" onClick={handleZoomOut} className="h-7 w-7 p-0">
-                  <ZoomOut className="h-3 w-3" />
-                </Button>
-                <span className="text-xs text-muted-foreground px-2 font-medium">
-                  {Math.round(zoomLevel * 100)}%
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground font-medium">缩放</span>
+                  <Button size="sm" variant="secondary" onClick={handleZoomIn} className="h-8 w-8 p-0">
+                    <ZoomIn className="h-4 w-4" />
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={handleZoomOut} className="h-8 w-8 p-0">
+                    <ZoomOut className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm text-muted-foreground px-2 font-medium">
+                    {Math.round(zoomLevel * 100)}%
+                  </span>
+                </div>
               </div>
               
-              {/* 关键家具信息 */}
-              <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg max-w-xs">
-                <div className="text-xs text-muted-foreground mb-2 font-medium">房间中的关键家具</div>
-                <div className="flex flex-wrap gap-1">
+              {/* 右侧：关键家具信息 */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground font-medium">房间中的关键家具：</span>
+                <div className="flex items-center gap-1">
                   {keyFurniture.map((item, index) => (
                     <div
                       key={index}
@@ -2867,7 +2875,10 @@ export default function DesignPage() {
                 </div>
               </div>
             </div>
+          </div>
 
+          {/* 图片显示区域 */}
+          <div className="flex-1 bg-gradient-to-br from-muted/20 to-background overflow-hidden">
             <div className="w-full h-full flex items-center justify-center p-6 xl:p-8">
               <div className="relative w-full max-w-6xl xl:max-w-7xl h-full max-h-full bg-card rounded-lg shadow-lg overflow-hidden">
                 {/* 一键替换loading效果 */}

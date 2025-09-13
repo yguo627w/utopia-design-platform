@@ -156,6 +156,12 @@ export default function DesignPage() {
   
   // 智能家具识别状态
   const [showSmartRecognitionDialog, setShowSmartRecognitionDialog] = useState(false)
+  
+  // 家具尺寸浮窗状态
+  const [showFurnitureSizePopup, setShowFurnitureSizePopup] = useState(false)
+  const [selectedFurnitureForSize, setSelectedFurnitureForSize] = useState<{ name: string; icon: string; dimensions?: { length: number; width: number; height: number } } | null>(null)
+  const [editingDimension, setEditingDimension] = useState<{ field: 'length' | 'width' | 'height' | null; value: string }>({ field: null, value: '' })
+  const [popupPosition, setPopupPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
   const [showRecognitionResultDialog, setShowRecognitionResultDialog] = useState(false)
   const [smartRecognitionLoading, setSmartRecognitionLoading] = useState(false)
   const [recognizedFurniture, setRecognizedFurniture] = useState<Array<{
@@ -1395,33 +1401,141 @@ export default function DesignPage() {
     }
   }
 
-  const handleFurnitureClick = (furnitureName: string) => {
+  const handleFurnitureClick = (furnitureName: string, event?: React.MouseEvent) => {
     console.log("[handleFurnitureClick] Clicked furniture:", furnitureName)
     
-    // 先切换到家具标签页
-    setActiveTab("furniture")
-    
-    // 等待标签页切换完成后再滚动
-    setTimeout(() => {
-      console.log("[handleFurnitureClick] furnitureInfoRef.current:", furnitureInfoRef.current)
-      
-      if (furnitureInfoRef.current) {
-        console.log("[handleFurnitureClick] Scrolling to furniture info area")
-        furnitureInfoRef.current.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center'
-        })
-        
-        // 添加高亮效果
-        furnitureInfoRef.current.classList.add('ring-2', 'ring-primary/50', 'ring-offset-2')
-        setTimeout(() => {
-          furnitureInfoRef.current?.classList.remove('ring-2', 'ring-primary/50', 'ring-offset-2')
-        }, 2000)
-      } else {
-        console.log("[handleFurnitureClick] furnitureInfoRef.current is null")
+    // 查找对应的家具信息
+    const furniture = keyFurniture.find(f => f.name === furnitureName)
+    if (furniture && furniture.dimensions) {
+      // 如果当前已经有浮窗打开，先关闭它
+      if (showFurnitureSizePopup) {
+        handleFurnitureSizeClose()
       }
-    }, 100)
+      
+      // 如果有尺寸信息，显示尺寸浮窗
+      setSelectedFurnitureForSize(furniture)
+      
+      // 获取点击位置
+      if (event) {
+        const rect = event.currentTarget.getBoundingClientRect()
+        setPopupPosition({
+          x: rect.left + rect.width / 2,
+          y: rect.bottom + 8 // 在元素下方8px处显示
+        })
+      }
+      
+      setShowFurnitureSizePopup(true)
+    } else {
+      // 如果没有尺寸信息，先关闭已打开的浮窗
+      if (showFurnitureSizePopup) {
+        handleFurnitureSizeClose()
+      }
+      
+      // 使用原来的逻辑
+      // 先切换到家具标签页
+      setActiveTab("furniture")
+      
+      // 等待标签页切换完成后再滚动
+      setTimeout(() => {
+        console.log("[handleFurnitureClick] furnitureInfoRef.current:", furnitureInfoRef.current)
+        
+        if (furnitureInfoRef.current) {
+          console.log("[handleFurnitureClick] Scrolling to furniture info area")
+          furnitureInfoRef.current.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          })
+          
+          // 添加高亮效果
+          furnitureInfoRef.current.classList.add('ring-2', 'ring-primary/50', 'ring-offset-2')
+          setTimeout(() => {
+            furnitureInfoRef.current?.classList.remove('ring-2', 'ring-primary/50', 'ring-offset-2')
+          }, 2000)
+        } else {
+          console.log("[handleFurnitureClick] furnitureInfoRef.current is null")
+        }
+      }, 100)
+    }
   }
+
+  // 家具尺寸浮窗相关函数
+  const handleFurnitureSizeClose = () => {
+    setShowFurnitureSizePopup(false)
+    setSelectedFurnitureForSize(null)
+    setEditingDimension({ field: null, value: '' })
+  }
+
+  const handleDimensionClick = (field: 'length' | 'width' | 'height', value: number) => {
+    setEditingDimension({ field, value: value.toString() })
+  }
+
+  const handleFurnitureDimensionSave = (field: 'length' | 'width' | 'height') => {
+    if (!selectedFurnitureForSize || !editingDimension.value) return
+    
+    const newValue = parseInt(editingDimension.value)
+    if (isNaN(newValue) || newValue <= 0) return
+
+    // 更新detectedFurniture状态
+    setDetectedFurniture(prev => prev.map(furniture => {
+      if (furniture.name === selectedFurnitureForSize.name) {
+        return {
+          ...furniture,
+          dimensions: {
+            length: furniture.dimensions?.length || 0,
+            width: furniture.dimensions?.width || 0,
+            height: furniture.dimensions?.height || 0,
+            [field]: newValue
+          }
+        }
+      }
+      return furniture
+    }))
+
+    // 更新选中的家具信息
+    setSelectedFurnitureForSize(prev => prev ? {
+      ...prev,
+      dimensions: {
+        length: prev.dimensions?.length || 0,
+        width: prev.dimensions?.width || 0,
+        height: prev.dimensions?.height || 0,
+        [field]: newValue
+      }
+    } : null)
+
+    // 显示toast提示
+    setToastMessage('尺寸已修改')
+    setShowToast(true)
+    setTimeout(() => setShowToast(false), 2000)
+
+    // 退出编辑模式
+    setEditingDimension({ field: null, value: '' })
+  }
+
+  const handleFurnitureDimensionCancel = () => {
+    setEditingDimension({ field: null, value: '' })
+  }
+
+  // 点击页面其他位置关闭浮窗
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showFurnitureSizePopup) {
+        const target = event.target as Element
+        // 检查点击的元素是否在浮窗内部
+        const popup = document.querySelector('[data-furniture-size-popup]')
+        if (popup && !popup.contains(target)) {
+          handleFurnitureSizeClose()
+        }
+      }
+    }
+
+    if (showFurnitureSizePopup) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showFurnitureSizePopup])
 
   const keyFurniture = getKeyFurniture()
 
@@ -2302,6 +2416,151 @@ export default function DesignPage() {
         </div>
       )}
 
+      {/* 家具尺寸浮窗 */}
+      {showFurnitureSizePopup && selectedFurnitureForSize && (
+        <div className="fixed inset-0 z-50 bg-transparent">
+          <div 
+            data-furniture-size-popup
+            className="absolute bg-white rounded-lg shadow-lg p-3 w-48"
+            style={{
+              left: `${popupPosition.x - 96}px`, // 96px是浮窗宽度的一半，让浮窗居中对齐
+              top: `${popupPosition.y}px`,
+            }}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm">{selectedFurnitureForSize.icon}</span>
+                <span className="font-semibold text-xs">{selectedFurnitureForSize.name}</span>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleFurnitureSizeClose}
+                className="h-5 w-5 p-0"
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+            
+            <div className="space-y-2">
+              {/* 长度 */}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">长度</span>
+                {editingDimension.field === 'length' ? (
+                  <div className="flex items-center gap-1">
+                    <Input
+                      type="number"
+                      value={editingDimension.value}
+                      onChange={(e) => setEditingDimension({ field: 'length', value: e.target.value })}
+                      className="w-12 h-6 text-xs"
+                      autoFocus
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => handleFurnitureDimensionSave('length')}
+                      className="h-6 px-1 text-xs"
+                    >
+                      确定
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleFurnitureDimensionCancel}
+                      className="h-6 px-1 text-xs"
+                    >
+                      取消
+                    </Button>
+                  </div>
+                ) : (
+                  <span 
+                    className="text-xs font-medium cursor-pointer hover:text-primary"
+                    onClick={() => handleDimensionClick('length', selectedFurnitureForSize.dimensions?.length || 0)}
+                  >
+                    {selectedFurnitureForSize.dimensions?.length || 0}cm
+                  </span>
+                )}
+              </div>
+              
+              {/* 宽度 */}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">宽度</span>
+                {editingDimension.field === 'width' ? (
+                  <div className="flex items-center gap-1">
+                    <Input
+                      type="number"
+                      value={editingDimension.value}
+                      onChange={(e) => setEditingDimension({ field: 'width', value: e.target.value })}
+                      className="w-12 h-6 text-xs"
+                      autoFocus
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => handleFurnitureDimensionSave('width')}
+                      className="h-6 px-1 text-xs"
+                    >
+                      确定
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleFurnitureDimensionCancel}
+                      className="h-6 px-1 text-xs"
+                    >
+                      取消
+                    </Button>
+                  </div>
+                ) : (
+                  <span 
+                    className="text-xs font-medium cursor-pointer hover:text-primary"
+                    onClick={() => handleDimensionClick('width', selectedFurnitureForSize.dimensions?.width || 0)}
+                  >
+                    {selectedFurnitureForSize.dimensions?.width || 0}cm
+                  </span>
+                )}
+              </div>
+              
+              {/* 高度 */}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">高度</span>
+                {editingDimension.field === 'height' ? (
+                  <div className="flex items-center gap-1">
+                    <Input
+                      type="number"
+                      value={editingDimension.value}
+                      onChange={(e) => setEditingDimension({ field: 'height', value: e.target.value })}
+                      className="w-12 h-6 text-xs"
+                      autoFocus
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => handleFurnitureDimensionSave('height')}
+                      className="h-6 px-1 text-xs"
+                    >
+                      确定
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleFurnitureDimensionCancel}
+                      className="h-6 px-1 text-xs"
+                    >
+                      取消
+                    </Button>
+                  </div>
+                ) : (
+                  <span 
+                    className="text-xs font-medium cursor-pointer hover:text-primary"
+                    onClick={() => handleDimensionClick('height', selectedFurnitureForSize.dimensions?.height || 0)}
+                  >
+                    {selectedFurnitureForSize.dimensions?.height || 0}cm
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex h-[calc(100vh-73px-65px-48px)] max-h-[calc(100vh-73px-65px-48px)]">
         <div className="w-72 xl:w-80 2xl:w-[320px] border-r border-border bg-card/30 overflow-y-auto flex-shrink-0 h-full">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
@@ -2615,57 +2874,6 @@ export default function DesignPage() {
                   </div>
                 </div>
 
-                {/* 房间中的家具信息卡 */}
-                 <div ref={furnitureInfoRef} className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg p-4 border border-primary/20">
-                   <div className="flex items-center justify-between mb-3">
-                     <h3 className="text-sm font-medium text-primary">房间中的家具</h3>
-                     <Button
-                       size="sm"
-                       variant="outline"
-                       className="h-6 w-6 p-0 bg-white/90 hover:bg-primary/10 hover:border-primary/30"
-                       onClick={handleFurnitureEditOpen}
-                     >
-                       ✏️
-                     </Button>
-                   </div>
-                   <div className="relative">
-                     <div 
-                       className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide" 
-                       style={{ 
-                         scrollbarWidth: 'none', 
-                         msOverflowStyle: 'none'
-                       }}
-                     >
-                       {keyFurniture.map((furniture, index) => (
-                         <div key={index} className="flex-shrink-0 w-24 bg-white/80 rounded-lg p-1.5 border border-primary/10">
-                           <div className="flex items-center gap-1 mb-1">
-                             <span className="text-xs">{furniture.icon}</span>
-                             <span className="text-[10px] font-medium truncate">{furniture.name}</span>
-                           </div>
-                           {furniture.dimensions && (
-                             <div className="space-y-0.5">
-                               <div className="text-[10px] text-muted-foreground">
-                                 长: {furniture.dimensions.length}cm
-                               </div>
-                               <div className="text-[10px] text-muted-foreground">
-                                 宽: {furniture.dimensions.width}cm
-                               </div>
-                               <div className="text-[10px] text-muted-foreground">
-                                 高: {furniture.dimensions.height}cm
-                               </div>
-                             </div>
-                           )}
-                         </div>
-                       ))}
-                     </div>
-                     {/* 滚动提示 */}
-                     {keyFurniture.length > 2 && (
-                       <div className="absolute right-2 top-1/2 -translate-y-1/2 bg-primary/20 rounded-full p-1">
-                         <ChevronRight className="h-3 w-3 text-primary" />
-                       </div>
-                     )}
-                   </div>
-                 </div>
 
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -2865,8 +3073,8 @@ export default function DesignPage() {
                   {keyFurniture.map((item, index) => (
                     <div
                       key={index}
-                      className="flex items-center gap-1 text-xs px-2 py-1 rounded-md hover:bg-primary/10 cursor-pointer border border-transparent hover:border-primary/20 transition-all duration-200 bg-muted/50"
-                      onClick={() => handleFurnitureClick(item.name)}
+                      className="flex items-center gap-1 text-xs px-2 py-1 rounded-md hover:bg-primary/10 cursor-pointer border border-[#7CCC94] hover:border-[#7CCC94]/80 transition-all duration-200 bg-[#7CCC94]/5"
+                      onClick={(e) => handleFurnitureClick(item.name, e)}
                     >
                       <span className="text-sm">{item.icon}</span>
                       <span className="font-medium">{item.name}</span>

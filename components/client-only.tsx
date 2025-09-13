@@ -15,8 +15,8 @@ export default function ClientOnly({ children, fallback = null }: ClientOnlyProp
   }, [])
 
   if (!hasMounted) {
-    return <>{fallback}</>
+    return fallback
   }
 
-  return <>{children}</>
+  return children
 }

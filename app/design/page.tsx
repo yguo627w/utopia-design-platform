@@ -89,6 +89,10 @@ export default function DesignPage() {
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState("")
   
+  // 图片加载状态管理
+  const [isImageLoading, setIsImageLoading] = useState(false)
+  const [pendingImage, setPendingImage] = useState<string | null>(null) // 待加载的图片
+  
   // 新增AI风格设计相关状态
   const [showStyleDesignDialog, setShowStyleDesignDialog] = useState(false)
   const [styleDesignLoading, setStyleDesignLoading] = useState(false)
@@ -287,6 +291,9 @@ export default function DesignPage() {
   useEffect(() => {
     if (!isClient) return
     
+    // 确保在客户端环境中才访问sessionStorage
+    if (typeof window === 'undefined') return
+    
     const uploadedImage = sessionStorage.getItem("uploadedImage")
     const selectedStyleImage = sessionStorage.getItem("selectedStyleImage")
     const styleTitle = sessionStorage.getItem("selectedStyleTitle")
@@ -295,13 +302,12 @@ export default function DesignPage() {
     if (uploadedImage) {
       // 只有在roomImage不是用户上传的图片时才设置，避免重复设置
       if (roomImage !== uploadedImage) {
-        setRoomImage(uploadedImage)
-        setOriginalRoomImage(uploadedImage)
+        // 使用安全的图片切换函数
+        switchToImage(uploadedImage)
       }
       // 清理所有上传相关的sessionStorage数据
       sessionStorage.removeItem("uploadedImage")
       sessionStorage.removeItem("uploadedImageName")
-      console.log("[v0] Loaded uploaded image:", uploadedImage)
       
       // 如果是云端URL，设置一个标记避免useEffect重复触发
       if (uploadedImage.startsWith("http://") || uploadedImage.startsWith("https://")) {
@@ -329,10 +335,12 @@ export default function DesignPage() {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         // 页面变为可见时，检查是否有新的图片需要恢复
+        if (typeof window === 'undefined') return
         const uploadedImage = sessionStorage.getItem("uploadedImage")
         if (uploadedImage && roomImage !== uploadedImage) {
           console.log("[Design] 页面重新可见，恢复图片:", uploadedImage)
-          setRoomImage(uploadedImage)
+          // 使用安全的图片切换函数
+          switchToImage(uploadedImage)
           sessionStorage.removeItem("uploadedImage")
         }
       }
@@ -963,8 +971,10 @@ export default function DesignPage() {
             name: file.name,
           }
           setChatImages((prev) => [...prev, newImage])
-          sessionStorage.setItem("uploadedImage", cloudUrl)
-          sessionStorage.setItem("uploadedImageName", file.name)
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem("uploadedImage", cloudUrl)
+            sessionStorage.setItem("uploadedImageName", file.name)
+          }
           
           // 设置房间图片并触发家具识别
           setRoomImage(cloudUrl)
@@ -1297,6 +1307,37 @@ export default function DesignPage() {
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
+    }
+  }
+
+  // 图片预加载函数
+  const preloadImage = (imageUrl: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => resolve()
+      img.onerror = () => reject(new Error('图片加载失败'))
+      img.src = imageUrl
+    })
+  }
+
+  // 安全的图片切换函数
+  const switchToImage = async (newImageUrl: string) => {
+    if (newImageUrl === roomImage) return // 如果图片相同，不需要切换
+    
+    setIsImageLoading(true)
+    setPendingImage(newImageUrl)
+    
+    try {
+      await preloadImage(newImageUrl)
+      // 图片预加载成功，立即切换
+      setRoomImage(newImageUrl)
+      setOriginalRoomImage(newImageUrl)
+      console.log("[Image Switch] 图片切换成功:", newImageUrl)
+    } catch (error) {
+      console.error("[Image Switch] 图片预加载失败:", error)
+    } finally {
+      setIsImageLoading(false)
+      setPendingImage(null)
     }
   }
 
@@ -2203,7 +2244,9 @@ export default function DesignPage() {
 
   const handleRenderEffect = () => {
     // Store current room image for preview page
-    sessionStorage.setItem("previewImage", roomImage)
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem("previewImage", roomImage)
+    }
     // Navigate to preview page
     router.push("/preview")
   }
@@ -2213,26 +2256,27 @@ export default function DesignPage() {
       <Navigation currentPage="design" />
       <StepIndicator currentStep={2} />
 
-      <div className="px-4 py-3 border-b border-border bg-card/20">
-        <div className="max-w-7xl mx-auto flex justify-between items-center gap-3">
-          <div className="flex items-center gap-4">
-            <h1 className="text-lg font-semibold">设计工作台</h1>
-            <Button variant="outline" size="sm" className="text-sm bg-transparent">
-              编辑模式
-            </Button>
-            <Button variant="outline" size="sm" className="text-sm bg-transparent">
-              协作模式
-            </Button>
-          </div>
-
-          <div className="flex gap-3">
-            <Button
-              size="sm"
-              className="text-sm font-semibold bg-primary hover:bg-primary/90"
-              onClick={handleRenderEffect}
-            >
-              渲染效果
-            </Button>
+      <div className="border-b border-border bg-card/30">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <h1 className="text-lg font-semibold">设计工作台</h1>
+              <Button variant="outline" size="sm" className="text-sm bg-transparent">
+                编辑模式
+              </Button>
+              <Button variant="outline" size="sm" className="text-sm bg-transparent">
+                协作模式
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                className="bg-primary"
+                onClick={handleRenderEffect}
+              >
+                渲染效果
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -2862,6 +2906,18 @@ export default function DesignPage() {
                     </div>
                   </div>
                 )}
+
+                {/* 图片加载loading效果 */}
+                {isImageLoading && pendingImage && (
+                  <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-15">
+                    <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 flex items-center gap-3">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <div className="text-center">
+                        <p className="text-sm font-medium text-gray-900">正在切换图片…</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 <img
                   src={roomImage || "/placeholder.svg"}
@@ -2869,6 +2925,16 @@ export default function DesignPage() {
                   className="w-full h-full object-cover transition-transform duration-300 ease-in-out"
                   style={{ transform: `scale(${zoomLevel})`, transformOrigin: "center top" }}
                 />
+                
+                {/* 预加载待显示的图片，但不显示 */}
+                {pendingImage && (
+                  <img
+                    src={pendingImage}
+                    alt=""
+                    className="hidden"
+                    onLoad={() => console.log("[Image Switch] 待显示图片预加载完成")}
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -2883,7 +2949,11 @@ export default function DesignPage() {
             <p className="text-xs xl:text-sm text-muted-foreground mt-1">用自然语言描述你的设计需求</p>
           </div>
 
-          <ClientOnly fallback={<div className="flex-1 overflow-y-auto p-4 xl:p-5 space-y-4 min-h-0 max-h-full flex items-center justify-center"><div className="text-muted-foreground">加载中...</div></div>}>
+          <ClientOnly fallback={
+            <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 xl:p-5 space-y-4 min-h-0 max-h-full flex items-center justify-center">
+              <div className="text-muted-foreground">加载中...</div>
+            </div>
+          }>
             <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 xl:p-5 space-y-4 min-h-0 max-h-full">
               {chatMessages.map((message, index) => (
               <div key={index} className={`flex gap-3 ${message.type === "user" ? "flex-row-reverse" : ""}`}>
@@ -3554,11 +3624,27 @@ export default function DesignPage() {
             {/* 当前页面设计图预览 */}
             <div className="bg-muted/50 rounded-lg p-4">
               <div className="text-center">
-                <img
-                  src={roomImage || "/placeholder.svg"}
-                  alt="当前页面设计图"
-                  className="w-full h-32 object-cover rounded-lg mb-2"
-                />
+                <div className="relative">
+                  {isImageLoading && pendingImage && (
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center rounded-lg z-10">
+                      <Loader2 className="h-4 w-4 animate-spin text-white" />
+                    </div>
+                  )}
+                  <img
+                    src={roomImage || "/placeholder.svg"}
+                    alt="当前页面设计图"
+                    className="w-full h-32 object-cover rounded-lg mb-2"
+                  />
+                  
+                  {/* 预加载待显示的图片，但不显示 */}
+                  {pendingImage && (
+                    <img
+                      src={pendingImage}
+                      alt=""
+                      className="hidden"
+                    />
+                  )}
+                </div>
                 <p className="text-sm text-muted-foreground">当前页面设计图</p>
               </div>
             </div>

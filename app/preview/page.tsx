@@ -192,7 +192,9 @@ export default function PreviewPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <h1 className="text-lg font-semibold">渲染预览</h1>
-              <Badge variant="outline">预览模式</Badge>
+              <Button variant="outline" size="sm" className="text-sm bg-transparent">
+                预览模式
+              </Button>
             </div>
             <div className="flex items-center gap-2">
               <Button 

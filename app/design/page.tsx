@@ -34,6 +34,7 @@ import {
   Sparkles,
   CheckCircle,
   ArrowLeft,
+  ArrowRight,
   Users,
   Baby,
   Dog,
@@ -87,7 +88,7 @@ export default function DesignPage() {
   const [isImageLoading, setIsImageLoading] = useState(true)
   const [showResetButton, setShowResetButton] = useState(false)
   const [imageHistory, setImageHistory] = useState<string[]>([]) // 图片历史记录
-  const [currentImageIndex, setCurrentImageIndex] = useState<number>(-1) // 当前图片在历史记录中的索引
+  const [currentImageIndex, setCurrentImageIndex] = useState<number>(0) // 当前图片在历史记录中的索引
   const [futureImages, setFutureImages] = useState<string[]>([]) // 未来的图片记录（用于下一步功能）
   const [selectedStyleTitle, setSelectedStyleTitle] = useState("")
   const [showToast, setShowToast] = useState(false)
@@ -1300,6 +1301,12 @@ export default function DesignPage() {
           setFurnitureDetectionError(false) // 重置错误状态
           setSceneAnalysisResult("") // 清空之前的场景分析结果
           setSceneAnalysisError(false) // 重置场景分析错误状态
+          
+          // 初始化历史记录状态
+          setImageHistory([cloudUrl])
+          setCurrentImageIndex(0)
+          setFutureImages([])
+          setShowResetButton(false) // 初始图片不需要显示重置按钮
           // 不重置 furnitureDetectionTriggered 和 sceneAnalysisTriggered，让 useEffect 处理触发逻辑
           
           // 让useEffect处理家具识别，这里只处理风格理解
@@ -1677,7 +1684,41 @@ export default function DesignPage() {
     }
   }
 
-  // 重置图片到上一次修改前的状态
+  // 上一步：返回到上一个图片
+  const handlePreviousImage = () => {
+    console.log("[Debug] handlePreviousImage called, currentImageIndex:", currentImageIndex, "imageHistory.length:", imageHistory.length)
+    if (currentImageIndex > 0) {
+      // 保存当前图片到未来记录
+      if (roomImage) {
+        setFutureImages(prev => [roomImage, ...prev])
+      }
+      
+      // 移动到上一个图片
+      const previousImage = imageHistory[currentImageIndex - 1]
+      setRoomImage(previousImage)
+      setCurrentImageIndex(prev => prev - 1)
+      console.log("[Image History] Moved to previous image:", previousImage)
+    } else {
+      console.log("[Debug] Cannot go to previous image: currentImageIndex <= 0")
+    }
+  }
+
+  // 下一步：返回到下一个图片
+  const handleNextImage = () => {
+    console.log("[Debug] handleNextImage called, futureImages.length:", futureImages.length)
+    if (futureImages.length > 0) {
+      // 移动到下一个图片
+      const nextImage = futureImages[0]
+      setRoomImage(nextImage)
+      setFutureImages(prev => prev.slice(1))
+      setCurrentImageIndex(prev => prev + 1)
+      console.log("[Image History] Moved to next image:", nextImage)
+    } else {
+      console.log("[Debug] Cannot go to next image: no future images")
+    }
+  }
+
+  // 重置图片到上一次修改前的状态（保留原有功能）
   const handleResetImage = () => {
     if (imageHistory.length > 0) {
       // 恢复到上一次修改前的图片
@@ -3343,18 +3384,34 @@ export default function DesignPage() {
           {/* 顶部工具栏区域 */}
           <div className="bg-white/95 backdrop-blur-sm border-b border-border px-4 py-3 flex-shrink-0">
             <div className="flex items-center justify-between gap-4">
-              {/* 左侧：重置和缩放控制 */}
+              {/* 左侧：上一步/下一步和缩放控制 */}
               <div className="flex items-center gap-3">
-                <Button 
-                  size="sm" 
-                  variant="secondary" 
-                  onClick={handleResetImage} 
-                  className={`text-xs px-3 py-1.5 ${showResetButton ? 'text-white hover:opacity-90' : 'opacity-50 cursor-not-allowed'}`}
-                  style={showResetButton ? { backgroundColor: '#A2BB40' } : {}}
-                  disabled={!showResetButton}
-                >
-                  回退
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button 
+                    size="sm" 
+                    variant="secondary" 
+                    onClick={handlePreviousImage} 
+                    className={`text-xs px-2 py-1.5 ${currentImageIndex > 0 ? 'text-white hover:opacity-90' : 'opacity-50 cursor-not-allowed'}`}
+                    style={currentImageIndex > 0 ? { backgroundColor: '#A2BB40' } : {}}
+                    disabled={currentImageIndex <= 0}
+                    title={`当前索引: ${currentImageIndex}, 历史记录长度: ${imageHistory.length}`}
+                  >
+                    <ArrowLeft className="h-3 w-3 mr-1" />
+                    上一步
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="secondary" 
+                    onClick={handleNextImage} 
+                    className={`text-xs px-2 py-1.5 ${futureImages.length > 0 ? 'text-white hover:opacity-90' : 'opacity-50 cursor-not-allowed'}`}
+                    style={futureImages.length > 0 ? { backgroundColor: '#A2BB40' } : {}}
+                    disabled={futureImages.length === 0}
+                    title={`未来图片数量: ${futureImages.length}`}
+                  >
+                    下一步
+                    <ArrowRight className="h-3 w-3 ml-1" />
+                  </Button>
+                </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground font-medium">缩放</span>
                   <Button size="sm" variant="secondary" onClick={handleZoomIn} className="h-8 w-8 p-0">

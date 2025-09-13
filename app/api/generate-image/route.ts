@@ -1,5 +1,30 @@
 import { type NextRequest, NextResponse } from "next/server"
 
+// 根据调用来源生成对应的prompt
+function generatePromptBySource(prompt: string, source: string): string {
+  switch (source) {
+    case "user-chat":
+      // 用户对话式设计
+      return `在其他家具不变的情况，请按照我的输入进行图片修改，修改指令如下：${prompt}`
+    
+    case "mbti-design":
+      // MBTI性格测试设计
+      return `在当前图片的基础上，将家具和软装的风格修改为：${prompt}。修改中注意：1不改变窗户的位置、2不改变画面的角度的取景、3不改变拍摄的角度、4不改变房间的局部和整体结构、5不改变主要家具位置`
+    
+    case "custom-style":
+      // 自定义风格设计 (AI风格理解)
+      return `在当前图片的基础上，将家具和软装的风格修改为：${prompt}。修改中注意：1不改变窗户的位置、2不改变画面的角度的取景、3不改变拍摄的角度、4不改变房间的局部和整体结构、5不改变主要家具位置`
+    
+    case "style-application":
+      // 预设风格应用 - 直接使用传入的prompt，不添加前缀
+      return prompt
+    
+    default:
+      // 默认场景 - 用户对话式设计
+      return `在其他家具不变的情况，请按照我的输入进行图片修改，修改指令如下：${prompt}`
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { prompt, image, source = "default" } = await request.json()
@@ -32,9 +57,7 @@ export async function POST(request: NextRequest) {
 
     try {
       // 根据调用来源决定prompt格式
-      const finalPrompt = source === "style-application" 
-        ? prompt  // 风格应用直接使用自定义prompt，不添加前缀
-        : "在其他家具不变的情况，请按照我的输入进行图片修改，修改指令如下：" + prompt  // 其他调用来源使用默认前缀
+      const finalPrompt = generatePromptBySource(prompt, source)
 
       // 使用新的seededit接口
       console.log("[API] Sending request to seededit API with:", {
@@ -104,9 +127,7 @@ async function retryWithFallback(prompt: string, source: string = "default") {
   const fallbackImage = "https://design.gemcoder.com/staticResource/echoAiSystemImages/676985223975790e510ca20672144337.png"
   
   // 根据调用来源决定prompt格式
-  const finalPrompt = source === "style-application" 
-    ? prompt  // 风格应用直接使用自定义prompt，不添加前缀
-    : "在其他家具不变的情况，请按照我的输入进行图片修改，修改指令如下：" + prompt  // 其他调用来源使用默认前缀
+  const finalPrompt = generatePromptBySource(prompt, source)
   
   const response = await fetch("http://competitor-cy.bcc-szth.baidu.com:80/doubao/edit-image", {
     method: "POST",

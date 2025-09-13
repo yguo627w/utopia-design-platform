@@ -87,6 +87,8 @@ export default function DesignPage() {
   const [isImageLoading, setIsImageLoading] = useState(true)
   const [showResetButton, setShowResetButton] = useState(false)
   const [imageHistory, setImageHistory] = useState<string[]>([]) // 图片历史记录
+  const [currentImageIndex, setCurrentImageIndex] = useState<number>(-1) // 当前图片在历史记录中的索引
+  const [futureImages, setFutureImages] = useState<string[]>([]) // 未来的图片记录（用于下一步功能）
   const [selectedStyleTitle, setSelectedStyleTitle] = useState("")
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState("")
@@ -1660,7 +1662,17 @@ export default function DesignPage() {
   // 保存当前图片到历史记录
   const saveImageToHistory = () => {
     if (roomImage) {
+      // 如果当前不在历史记录的末尾，需要清除未来的记录
+      if (currentImageIndex < imageHistory.length - 1) {
+        setImageHistory(prev => prev.slice(0, currentImageIndex + 1))
+        setFutureImages([])
+      }
+      
+      // 添加新图片到历史记录
       setImageHistory(prev => [...prev, roomImage])
+      setCurrentImageIndex(prev => prev + 1)
+      setFutureImages([]) // 清除未来记录
+      setShowResetButton(true)
       console.log("[Image History] Saved current image to history:", roomImage)
     }
   }
@@ -2031,7 +2043,7 @@ export default function DesignPage() {
       })
 
       // Call the API with the saved user message
-      const generatedImageUrl = await callImageGenerationAPI(userInputMessage, imageUrl)
+      const generatedImageUrl = await callImageGenerationAPI(userInputMessage, imageUrl, "user-chat")
 
       // Add AI response with generated image
       const messageId = `ai-response-${Date.now()}`
@@ -2212,6 +2224,7 @@ export default function DesignPage() {
         body: JSON.stringify({
           prompt: mbtiResult.description,
           image: roomImage,
+          source: "mbti-design",
         }),
       })
 
@@ -2505,8 +2518,8 @@ export default function DesignPage() {
       }
 
       // 调用豆包API进行风格设计
-      // 按照要求构造prompt：『在其他家具不变的情况，请按照我的输入进行图片修改，修改指令如下：把房间修改为+：${styleKeywords}』
-      const prompt = `在其他家具不变的情况，请按照我的输入进行图片修改，修改指令如下：把房间修改为+：${styleKeywords}`
+      // 按照要求构造prompt：保持当前房间的布局和整体结构不变，仅将风格改为AI风格理解后的描述
+      const prompt = `保持当前房间的布局和整体结构不变(例如不改变沙发、茶几、电视墙、床、衣柜等家具的位置)，不改变家具的基本形态，仅将风格改为：${styleKeywords}`
       
       // 使用convertImageToUrl函数将当前房间图片转换为有效的URL
       // 这样可以确保本地上传的图片能够被豆包API正确识别和处理
@@ -2520,7 +2533,7 @@ export default function DesignPage() {
       
       // 同时传入转换后的图片URL和修改prompt
       // 这样AI就能基于当前房间图片，按照指定风格进行重新设计
-      const generatedImageUrl = await callImageGenerationAPI(prompt, targetImageUrl)
+      const generatedImageUrl = await callImageGenerationAPI(styleKeywords, targetImageUrl, "custom-style")
       
       // 更新房间图片
       saveImageToHistory() // 保存当前图片到历史记录
@@ -2606,7 +2619,7 @@ export default function DesignPage() {
       }).join("、")
 
       // 构建完整的prompt，按照新的指定结构
-      const prompt = `保持当前房间的布局和整体结构不变(例如不改变沙发、茶几、电视墙、床、衣柜等家具的位置)，不改变家具的基本形态，仅将风格改为「${selectedStyle.keywords.join("、")}」，在设计过程中注意增加【${familyTags}】相关家具元素，并注意用户补充需求【${additionalRequirements || "无补充需求"}】。`
+      const prompt = `在当前图片的基础上，将家具和软装的风格修改为：${selectedStyle.keywords.join("、")}。在设计过程中注意增加【${familyTags}】相关家具元素，并注意用户补充需求【${additionalRequirements || "无补充需求"}】。修改中注意：1不改变窗户的位置、2不改变画面的角度的取景、3不改变拍摄的角度、4不改变房间的局部和整体结构、5不改变主要家具位置`
       
       // 调用豆包API进行风格应用
       const targetImageUrl = await convertImageToUrl(roomImage)

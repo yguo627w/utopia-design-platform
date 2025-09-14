@@ -216,7 +216,10 @@ export const useCart = () => {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === "sharedCart") {
         console.log("[useCart] Storage changed, reloading cart")
-        loadCartFromStorage()
+        // 使用 setTimeout 延迟状态更新，避免在渲染过程中同步更新
+        setTimeout(() => {
+          loadCartFromStorage()
+        }, 0)
       }
     }
 
@@ -224,38 +227,40 @@ export const useCart = () => {
     const handleCartUpdated = (event: CustomEvent) => {
       console.log("[useCart] Cart updated event received:", event.detail)
       if (event.detail && event.detail.cart) {
-        // 立即更新购物车数据
-        const sharedCart = event.detail.cart
-        
-        // 检查是否需要添加默认商品
-        const hasInitialized = localStorage.getItem("cartInitialized")
-        const defaultItemRemoved = localStorage.getItem("defaultItemRemoved")
-        
-        let mergedCart: CartItem[] = [...sharedCart]
-        
-        // 只有在第一次加载且默认商品未被删除时才添加默认商品
-        if (!hasInitialized && !defaultItemRemoved) {
-          const defaultCart: CartItem[] = [
-            {
-              id: 1001,
-              name: "北欧风三人布艺沙发",
-              price: 239,
-              image: "/nordic-fabric-sofa.png",
-              quantity: 1,
-              source: "marketplace",
-              addedAt: Date.now() - 1000000,
-            },
-          ]
-          mergedCart = [...defaultCart, ...sharedCart]
+        // 使用 setTimeout 延迟状态更新，避免在渲染过程中同步更新
+        setTimeout(() => {
+          const sharedCart = event.detail.cart
           
-          // 标记已经初始化
-          localStorage.setItem("cartInitialized", "true")
-        }
-        
-        mergedCart.sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0))
-        
-        setCartItems(mergedCart)
-        console.log("[useCart] Cart updated immediately:", mergedCart)
+          // 检查是否需要添加默认商品
+          const hasInitialized = localStorage.getItem("cartInitialized")
+          const defaultItemRemoved = localStorage.getItem("defaultItemRemoved")
+          
+          let mergedCart: CartItem[] = [...sharedCart]
+          
+          // 只有在第一次加载且默认商品未被删除时才添加默认商品
+          if (!hasInitialized && !defaultItemRemoved) {
+            const defaultCart: CartItem[] = [
+              {
+                id: 1001,
+                name: "北欧风三人布艺沙发",
+                price: 239,
+                image: "/nordic-fabric-sofa.png",
+                quantity: 1,
+                source: "marketplace",
+                addedAt: Date.now() - 1000000,
+              },
+            ]
+            mergedCart = [...defaultCart, ...sharedCart]
+            
+            // 标记已经初始化
+            localStorage.setItem("cartInitialized", "true")
+          }
+          
+          mergedCart.sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0))
+          
+          setCartItems(mergedCart)
+          console.log("[useCart] Cart updated immediately:", mergedCart)
+        }, 0)
       }
     }
 

@@ -2691,7 +2691,7 @@ export default function DesignPage() {
       }).join("、")
 
       // 构建完整的prompt，按照新的指定结构
-      const prompt = `在当前图片的基础上，将家具和软装的风格修改为：${selectedStyle.keywords.join("、")}。在设计过程中注意增加【${familyTags}】相关家具元素，并注意用户补充需求【${additionalRequirements || "无补充需求"}】。修改中注意：1不改变窗户的位置、2不改变画面的角度的取景、3不改变拍摄的角度、4不改变房间的局部和整体结构、5不改变主要家具位置`
+      const prompt = `在当前图片的基础上，将家具和软装的风格修改为：「${selectedStyle.keywords.join("、")}」。在设计过程中注意增加【${familyTags}】相关1-2件家具元素，并注意用户补充需求【${additionalRequirements || "无补充需求"}】。修改中注意：1不改变窗户和阳台的位置、2不改变画面的角度的取景、3不改变拍摄的角度、4不改变房间的局部和整体结构、5不改变主要家具位置`
       
       // 调用豆包API进行风格应用
       const targetImageUrl = await convertImageToUrl(roomImage)
